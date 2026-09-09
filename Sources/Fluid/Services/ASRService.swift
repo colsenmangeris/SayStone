@@ -526,6 +526,7 @@ final class ASRService: ObservableObject {
 
     private let audioCaptureReadinessGate = AudioCaptureReadinessGate()
     private let firstPCMTimeoutNanoseconds: UInt64 = 2_000_000_000
+    private let audioStartupDeadline = AudioStartupDeadline()
     private var audioCaptureStartGeneration: UInt64 = 0
     private var audioCaptureAttemptID: UInt64 = 0
     private var isTerminating = false
@@ -1326,6 +1327,7 @@ final class ASRService: ObservableObject {
                     selection: selection,
                     reason: "recording_start"
                 )
+                try Task.checkCancellation()
                 self.audioStartAttemptInputUID = device.uid
                 self.audioStartAttemptInputName = device.name
                 self.audioStartAttemptIsBluetooth = device.isBluetooth
@@ -2076,6 +2078,15 @@ final class ASRService: ObservableObject {
             DebugLogger.shared.warning("START() blocked - app is terminating", source: "ASRService")
             return .failed
         }
+        guard !self.audioStartupDeadline.isRecovering else {
+            let message = AudioStartupDeadline.Failure.recovering.localizedDescription
+            self.errorTitle = "Microphone Recovering"
+            self.errorMessage = message
+            self.showError = true
+            NotificationCenter.default.post(name: NSNotification.Name("ASRServiceStartFailed"), object: nil,
+                                            userInfo: ["errorMessage": message])
+            return .failed
+        }
         self.audioCaptureStartGeneration &+= 1
         let startGeneration = self.audioCaptureStartGeneration
         self.isStarting = true
@@ -2178,11 +2189,18 @@ final class ASRService: ObservableObject {
             while true {
                 let routeGenerationAtStart = self.audioRouteRecoveryGeneration
                 do {
-                    try await self.startConfiguredAudioCapture(
-                        excluding: failedInputUIDs,
-                        forcingInputUID: forcedInputUID
-                    )
+                    let excludedInputs = failedInputUIDs
+                    let forcedInput = forcedInputUID
+                    try await self.audioStartupDeadline.run {
+                        try await self.startConfiguredAudioCapture(
+                            excluding: excludedInputs,
+                            forcingInputUID: forcedInput
+                        )
+                    }
                 } catch {
+                    // A timed-out hardware call still owns its handle. Do not
+                    // queue retry/teardown behind it or switch devices concurrently.
+                    if error is AudioStartupDeadline.Failure || error is CancellationError { throw error }
                     guard let failedUID = self.audioStartAttemptInputUID else { throw error }
                     let now = ProcessInfo.processInfo.systemUptime
                     let retryBluetoothInput = bluetoothStabilization.shouldRetry(
@@ -2408,11 +2426,13 @@ final class ASRService: ObservableObject {
             self.isDictionaryTrainingCaptureActive = false
             self.audioCapturePipeline.setRecordingEnabled(false)
             self.isRunning = false
-            await self.stopActiveAudioCapture(
-                retainDirectPreparedCapture: false,
-                reason: "start_failed"
-            )
-            await self.retireAudioEngineAndWait(reason: "start_failed")
+            if !self.audioStartupDeadline.isRecovering {
+                await self.stopActiveAudioCapture(
+                    retainDirectPreparedCapture: false,
+                    reason: "start_failed"
+                )
+                await self.retireAudioEngineAndWait(reason: "start_failed")
+            }
             let wasCancelled =
                 error is CancellationError ||
                 startGeneration != self.audioCaptureStartGeneration ||
@@ -2434,7 +2454,9 @@ final class ASRService: ObservableObject {
             }
 
             guard wasCancelled == false else { return .failed }
-            AppServices.shared.microphonePreferenceCoordinator.markActiveSelectionUnavailable()
+            if !(error is AudioStartupDeadline.Failure) {
+                AppServices.shared.microphonePreferenceCoordinator.markActiveSelectionUnavailable()
+            }
 
             // Provide user-friendly error feedback
             let nsError = error as NSError
@@ -2563,6 +2585,7 @@ final class ASRService: ObservableObject {
     func cancelPendingAudioCaptureStart(reason: String) async {
         guard self.isStarting, self.isRunning == false else { return }
         self.audioCaptureStartGeneration &+= 1
+        self.audioStartupDeadline.cancel()
         // A start waiting for the previous session's PCM handoff must wake to
         // observe the generation change; the old stop keeps ownership of the gate.
         self.recordingBufferHandoffGate.releasePendingWaiters()
