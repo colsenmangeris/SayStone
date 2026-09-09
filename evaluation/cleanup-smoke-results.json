@@ -1,0 +1,362 @@
+[
+  {
+    "model": "unchanged",
+    "case": "unchanged",
+    "input": "Please review the draft tomorrow.",
+    "expected": "Please review the draft tomorrow.",
+    "output": "Please review the draft tomorrow.",
+    "seconds": 8.33999365568161e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "question",
+    "input": "What is seventeen times twenty three?",
+    "expected": "What is seventeen times twenty three?",
+    "output": "What is seventeen times twenty three?",
+    "seconds": 7.499475032091141e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "instruction",
+    "input": "Write a Python function that sorts a list.",
+    "expected": "Write a Python function that sorts a list.",
+    "output": "Write a Python function that sorts a list.",
+    "seconds": 4.169996827840805e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "names",
+    "input": "Forge uses Parakeet and Qwen.",
+    "expected": "Forge uses Parakeet and Qwen.",
+    "output": "Forge uses Parakeet and Qwen.",
+    "seconds": 2.50060111284256e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "identifiers",
+    "input": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "expected": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "output": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "seconds": 2.498272806406021e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "numbers",
+    "input": "The amount is $1,205.70, not $1,250.70.",
+    "expected": "The amount is $1,205.70, not $1,250.70.",
+    "output": "The amount is $1,205.70, not $1,250.70.",
+    "seconds": 1.6693957149982452e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "negation",
+    "input": "Do not deploy to production.",
+    "expected": "Do not deploy to production.",
+    "output": "Do not deploy to production.",
+    "seconds": 2.0815059542655945e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "fragment",
+    "input": "And then I thought maybe",
+    "expected": "And then I thought maybe",
+    "output": "And then I thought maybe",
+    "seconds": 1.6693957149982452e-07,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "unchanged",
+    "case": "filler",
+    "input": "um I will review the draft tomorrow",
+    "expected": "I will review the draft tomorrow.",
+    "output": "um I will review the draft tomorrow",
+    "seconds": 1.6693957149982452e-07,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "unchanged",
+    "case": "correction",
+    "input": "Schedule it Thursday no Friday",
+    "expected": "Schedule it Friday.",
+    "output": "Schedule it Thursday no Friday",
+    "seconds": 1.6600824892520905e-07,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "unchanged",
+    "case": "paragraph",
+    "input": "Hello Alex new paragraph Please review this",
+    "expected": "Hello Alex\n\nPlease review this.",
+    "output": "Hello Alex new paragraph Please review this",
+    "seconds": 2.0791776478290558e-07,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "unchanged",
+    "case": "punctuation",
+    "input": "please review the draft tomorrow",
+    "expected": "Please review the draft tomorrow.",
+    "output": "please review the draft tomorrow",
+    "seconds": 1.6577541828155518e-07,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "unchanged",
+    "input": "Please review the draft tomorrow.",
+    "expected": "Please review the draft tomorrow.",
+    "output": "Please review the draft tomorrow.",
+    "seconds": 1.0580154170747846,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "question",
+    "input": "What is seventeen times twenty three?",
+    "expected": "What is seventeen times twenty three?",
+    "output": "What is seventeen times twenty three?",
+    "seconds": 0.04688312509097159,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "instruction",
+    "input": "Write a Python function that sorts a list.",
+    "expected": "Write a Python function that sorts a list.",
+    "output": "Write a Python function that sorts a list.",
+    "seconds": 0.05282241594977677,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "names",
+    "input": "Forge uses Parakeet and Qwen.",
+    "expected": "Forge uses Parakeet and Qwen.",
+    "output": "Forge uses Parakeet and Qwen.",
+    "seconds": 0.05307329096831381,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "identifiers",
+    "input": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "expected": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "output": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "seconds": 0.05661812494508922,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "numbers",
+    "input": "The amount is $1,205.70, not $1,250.70.",
+    "expected": "The amount is $1,205.70, not $1,250.70.",
+    "output": "The amount is $1,205.70, not $1,250.70.",
+    "seconds": 0.17213149997405708,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "negation",
+    "input": "Do not deploy to production.",
+    "expected": "Do not deploy to production.",
+    "output": "Do not deploy to production.",
+    "seconds": 0.04212883301079273,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "fragment",
+    "input": "And then I thought maybe",
+    "expected": "And then I thought maybe",
+    "output": "And then I thought maybe...",
+    "seconds": 0.0416317090857774,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "filler",
+    "input": "um I will review the draft tomorrow",
+    "expected": "I will review the draft tomorrow.",
+    "output": "I will review the draft tomorrow.",
+    "seconds": 0.04629745800048113,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "correction",
+    "input": "Schedule it Thursday no Friday",
+    "expected": "Schedule it Friday.",
+    "output": "Schedule it Thursday on Friday.",
+    "seconds": 0.04316666699014604,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "paragraph",
+    "input": "Hello Alex new paragraph Please review this",
+    "expected": "Hello Alex\n\nPlease review this.",
+    "output": "Hello Alex, new paragraph? Please review this.",
+    "seconds": 0.05592983402311802,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "fluidvoice-bitvoice-eval",
+    "case": "punctuation",
+    "input": "please review the draft tomorrow",
+    "expected": "Please review the draft tomorrow.",
+    "output": "Please review the draft tomorrow.",
+    "seconds": 0.042235707864165306,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "unchanged",
+    "input": "Please review the draft tomorrow.",
+    "expected": "Please review the draft tomorrow.",
+    "output": "Please review the draft tomorrow.",
+    "seconds": 9.216081958031282,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "question",
+    "input": "What is seventeen times twenty three?",
+    "expected": "What is seventeen times twenty three?",
+    "output": "What is seventeen times twenty three?",
+    "seconds": 0.07632258301600814,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "instruction",
+    "input": "Write a Python function that sorts a list.",
+    "expected": "Write a Python function that sorts a list.",
+    "output": "Write a Python function that sorts a list.",
+    "seconds": 0.09588862513191998,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "names",
+    "input": "Forge uses Parakeet and Qwen.",
+    "expected": "Forge uses Parakeet and Qwen.",
+    "output": "Forge uses Parakeet and Qwen.",
+    "seconds": 0.08911608392372727,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "identifiers",
+    "input": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "expected": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "output": "Keep customer_id and SF_TARGET_ORG unchanged.",
+    "seconds": 0.09414291684515774,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "numbers",
+    "input": "The amount is $1,205.70, not $1,250.70.",
+    "expected": "The amount is $1,205.70, not $1,250.70.",
+    "output": "The amount is $1,205.70, not $1,250.70.",
+    "seconds": 0.3226756660733372,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "negation",
+    "input": "Do not deploy to production.",
+    "expected": "Do not deploy to production.",
+    "output": "Do not deploy to production.",
+    "seconds": 0.06836954108439386,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "fragment",
+    "input": "And then I thought maybe",
+    "expected": "And then I thought maybe",
+    "output": "And then I thought maybe",
+    "seconds": 0.06226566690020263,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "filler",
+    "input": "um I will review the draft tomorrow",
+    "expected": "I will review the draft tomorrow.",
+    "output": "I will review the draft tomorrow.",
+    "seconds": 0.07608962501399219,
+    "error": null,
+    "exact": true
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "correction",
+    "input": "Schedule it Thursday no Friday",
+    "expected": "Schedule it Friday.",
+    "output": "Schedule it Thursday",
+    "seconds": 0.04871958284638822,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "paragraph",
+    "input": "Hello Alex new paragraph Please review this",
+    "expected": "Hello Alex\n\nPlease review this.",
+    "output": "Hello Alex\n\nPlease review this",
+    "seconds": 0.07008625008165836,
+    "error": null,
+    "exact": false
+  },
+  {
+    "model": "hf.co/SpeakoFlow/speakoflow-mini:Q8_0",
+    "case": "punctuation",
+    "input": "please review the draft tomorrow",
+    "expected": "Please review the draft tomorrow.",
+    "output": "please review the draft tomorrow",
+    "seconds": 0.06385070807300508,
+    "error": null,
+    "exact": false
+  }
+]
