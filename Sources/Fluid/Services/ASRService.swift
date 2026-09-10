@@ -656,6 +656,7 @@ final class ASRService: ObservableObject {
         self.streamingWorkState.invalidateProvider()
         await self.transcriptionExecutor.cancelAndAwaitPending()
 
+        self.qwenProvider = nil
         self.fluidAudioProvider = nil
         self.parakeetRealtimeProvider = nil
         self.externalCoreMLProvider = nil
@@ -670,6 +671,8 @@ final class ASRService: ObservableObject {
 
     /// The transcription provider, selected based on the unified SpeechModel setting.
     /// Uses the new SettingsStore.selectedSpeechModel instead of old TranscriptionProviderOption.
+    private var qwenProvider: QwenTranscriptionProvider?
+
     private var transcriptionProvider: TranscriptionProvider {
         let model = SettingsStore.shared.selectedSpeechModel
 
@@ -691,8 +694,13 @@ final class ASRService: ObservableObject {
             return self.getExternalCoreMLProvider()
         case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
             return self.getNemotronProvider(mode: model.nemotronProviderMode)
+        case .maiTranscribe2:
+            return MAITranscriptionProvider()
         case .qwen3Asr:
-            return self.getFluidAudioProvider()
+            if let provider = self.qwenProvider { return provider }
+            let provider = QwenTranscriptionProvider()
+            self.qwenProvider = provider
+            return provider
         default:
             return self.getWhisperProvider()
         }
@@ -821,9 +829,10 @@ final class ASRService: ObservableObject {
             return ExternalCoreMLTranscriptionProvider(modelOverride: model)
         case .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
             return NemotronProvider(mode: model.nemotronProviderMode)
+        case .maiTranscribe2:
+            return MAITranscriptionProvider()
         case .qwen3Asr:
-            // Qwen support removed; route legacy requests to Parakeet v3.
-            return FluidAudioProvider(modelOverride: .parakeetTDT, configureWordBoosting: false)
+            return QwenTranscriptionProvider()
         default:
             // Whisper models - create provider with specific model override
             return WhisperProvider(modelOverride: model)
@@ -960,6 +969,7 @@ final class ASRService: ObservableObject {
         self.wordBoostStatusText = "Word boost: off"
 
         // Reset cached providers to force re-initialization with new settings
+        self.qwenProvider = nil
         self.fluidAudioProvider = nil
         self.parakeetRealtimeProvider = nil
         self.externalCoreMLProvider = nil

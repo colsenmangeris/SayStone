@@ -105,6 +105,8 @@ extension VoiceEngineSettingsView {
                             }
                         }
 
+                        MAISpeechSettingsView(settings: self.settings)
+
                         // Active + Other models list
                         VStack(alignment: .leading, spacing: 10) {
                             if let activeModel {
@@ -249,6 +251,12 @@ extension VoiceEngineSettingsView {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+                if model == .maiTranscribe2 || model == .qwen3Asr {
+                    Text("Performance not yet benchmarked")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 140)
+                } else {
                 HStack(spacing: 16) {
                     LiquidBar(
                         fillPercent: model.speedPercent,
@@ -268,6 +276,7 @@ extension VoiceEngineSettingsView {
                 }
                 .frame(width: 140, alignment: .center)
                 .animation(.spring(response: 0.5, dampingFraction: 0.7), value: model.id)
+                }
             }
 
             if supportsCustomWords {
@@ -331,6 +340,9 @@ extension VoiceEngineSettingsView {
                     .foregroundStyle(self.voiceEngineSecondaryText)
 
                 HStack(spacing: 12) {
+                    if model == .maiTranscribe2 || model == .qwen3Asr {
+                        Text("Not benchmarked").font(.caption).foregroundStyle(.secondary)
+                    } else {
                     HStack(spacing: 4) {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 11))
@@ -347,6 +359,8 @@ extension VoiceEngineSettingsView {
                         Text("Acc \(Int(model.accuracyPercent * 100))%")
                             .font(self.theme.typography.bodyStrong)
                             .foregroundStyle(self.voiceEngineSecondaryText)
+                    }
+
                     }
 
                     if isSelected && !isActive {
@@ -435,6 +449,8 @@ extension VoiceEngineSettingsView {
                     .controlSize(.small)
                     .disabled(self.viewModel.asr.isCancellingModelPreparation)
                 }
+            } else if model == .maiTranscribe2 && !model.isInstalled {
+                Text("Configure Azure above").font(.caption).foregroundStyle(.secondary)
             } else if model.isInstalled {
                 HStack(spacing: 8) {
                     if isActive {
@@ -459,7 +475,7 @@ extension VoiceEngineSettingsView {
                         .disabled(self.viewModel.areSpeechModelActionsBlocked)
                     }
 
-                    if !model.usesAppleLogo {
+                    if !model.usesAppleLogo && model != .maiTranscribe2 {
                         if isSelected {
                             Button {
                                 self.viewModel.deleteSpeechModel(model)

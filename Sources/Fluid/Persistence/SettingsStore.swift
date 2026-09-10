@@ -4656,9 +4656,8 @@ final class SettingsStore: ObservableObject {
     /// Unified speech recognition model selection.
     /// Replaces the old TranscriptionProviderOption + WhisperModelSize dual-setting.
     enum SpeechModel: String, CaseIterable, Identifiable, Codable {
-        /// Temporarily disabled in UI/runtime while Parakeet word boosting work is prioritized.
-        /// Flip to `true` in a future round to re-enable Qwen without deleting implementation.
-        static let qwenPreviewEnabled = false
+        /// Native local Qwen provider; final transcription only.
+        static let qwenPreviewEnabled = true
 
         // MARK: - FluidAudio Models (Apple Silicon Only)
 
@@ -4666,6 +4665,7 @@ final class SettingsStore: ObservableObject {
         case parakeetTDTv2 = "parakeet-tdt-v2"
         case parakeetRealtime = "parakeet-realtime"
         case qwen3Asr = "qwen3-asr"
+        case maiTranscribe2 = "mai-transcribe-2"
         case cohereTranscribeSixBit = "cohere-transcribe-6bit"
         case nemotronOffline = "nemotron-3.5-offline"
         case nemotronStreaming = "nemotron-3.5-streaming"
@@ -4693,10 +4693,11 @@ final class SettingsStore: ObservableObject {
 
         var displayName: String {
             switch self {
+            case .maiTranscribe2: return "MAI-Transcribe-2 (Cloud Preview)"
             case .parakeetTDT: return "Parakeet TDT v3 (Multilingual)"
             case .parakeetTDTv2: return "Parakeet TDT v2 (English Only)"
             case .parakeetRealtime: return "Parakeet Flash (Beta)"
-            case .qwen3Asr: return "Qwen3 ASR (Beta)"
+            case .qwen3Asr: return "Qwen3-ASR 0.6B (Beta)"
             case .cohereTranscribeSixBit: return "Cohere Transcribe"
             case .nemotronOffline: return "Nemotron 3.5 Multilingual"
             case .nemotronStreaming: return "Nemotron Speech 3.5 - Ultra Fast Low Latency"
@@ -4714,6 +4715,7 @@ final class SettingsStore: ObservableObject {
 
         var languageSupport: String {
             switch self {
+            case .maiTranscribe2: return "60 Languages"
             case .parakeetTDT:
                 return "25 Languages"
             case .parakeetTDTv2: return "English Only (Higher Accuracy)"
@@ -4730,10 +4732,11 @@ final class SettingsStore: ObservableObject {
 
         var downloadSize: String {
             switch self {
+            case .maiTranscribe2: return "Cloud · Azure key required"
             case .parakeetTDT: return "~460.9 MiB"
             case .parakeetTDTv2: return "~442.9 MiB"
             case .parakeetRealtime: return "~428.4 MiB"
-            case .qwen3Asr: return "~2.0 GiB"
+            case .qwen3Asr: return "~680 MiB"
             case .cohereTranscribeSixBit: return "~1.54 GiB"
             case .nemotronOffline: return "~530.8 MiB"
             case .nemotronStreaming: return "~668.2 MiB"
@@ -4751,10 +4754,11 @@ final class SettingsStore: ObservableObject {
 
         var expectedDownloadBytes: Int64 {
             switch self {
+            case .maiTranscribe2: return 0
             case .parakeetTDT: return 483_288_717
             case .parakeetTDTv2: return 464_421_712
             case .parakeetRealtime: return 449_190_189
-            case .qwen3Asr: return 2000 * 1024 * 1024
+            case .qwen3Asr: return 712_777_119
             case .cohereTranscribeSixBit: return 1_650_748_785
             case .nemotronOffline: return 556_552_620
             case .nemotronStreaming, .nemotronStreaming320: return 700_685_415
@@ -4777,6 +4781,7 @@ final class SettingsStore: ObservableObject {
 
         var isWhisperModel: Bool {
             switch self {
+            case .maiTranscribe2: return false
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .qwen3Asr, .cohereTranscribeSixBit, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320, .appleSpeech, .appleSpeechAnalyzer: return false
             default: return true
             }
@@ -4892,6 +4897,7 @@ final class SettingsStore: ObservableObject {
         /// Human-readable marketing name for the card UI
         var humanReadableName: String {
             switch self {
+            case .maiTranscribe2: return "MAI-Transcribe-2"
             case .parakeetTDT: return "Blazing Fast - Multilingual"
             case .parakeetTDTv2: return "Blazing Fast - English"
             case .parakeetRealtime: return "Flash Dictation"
@@ -4914,6 +4920,7 @@ final class SettingsStore: ObservableObject {
         /// One-line description for the card UI
         var cardDescription: String {
             switch self {
+            case .maiTranscribe2: return "Hosted transcription through your Azure Speech resource. Audio is sent to Microsoft; usage charges apply."
             case .parakeetTDT:
                 return "Fast multilingual transcription. Supports Bulgarian, Croatian, Czech, Danish, " +
                     "Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, " +
@@ -4924,7 +4931,7 @@ final class SettingsStore: ObservableObject {
             case .parakeetRealtime:
                 return "English-only streaming local dictation with low-latency partial text and end-of-utterance detection."
             case .qwen3Asr:
-                return "Qwen3 multilingual ASR via FluidAudio. Higher quality, heavier memory footprint."
+                return "Local Qwen3-ASR 0.6B via MLX. Transcribes after recording stops; no cloud service."
             case .cohereTranscribeSixBit:
                 return "High-accuracy multilingual transcription. Select the language manually before dictation for best results."
             case .nemotronOffline:
@@ -4955,6 +4962,7 @@ final class SettingsStore: ObservableObject {
         /// Minimum recommended RAM in GB for this model to run safely
         var requiredMemoryGB: Double {
             switch self {
+            case .maiTranscribe2: return 1.0
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime:
                 return 4.0
             case .qwen3Asr:
@@ -4999,6 +5007,7 @@ final class SettingsStore: ObservableObject {
         /// Speed rating (1-5, higher is faster)
         var speedRating: Int {
             switch self {
+            case .maiTranscribe2: return 0
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
             case .parakeetRealtime: return 5
@@ -5020,6 +5029,7 @@ final class SettingsStore: ObservableObject {
         /// Accuracy rating (1-5, higher is more accurate)
         var accuracyRating: Int {
             switch self {
+            case .maiTranscribe2: return 0
             case .parakeetTDT: return 5
             case .parakeetTDTv2: return 5
             case .parakeetRealtime: return 4
@@ -5041,6 +5051,7 @@ final class SettingsStore: ObservableObject {
         /// Exact speed percentage (0.0 - 1.0) for the liquid bars
         var speedPercent: Double {
             switch self {
+            case .maiTranscribe2: return 0
             case .parakeetTDT: return 1.0
             case .parakeetTDTv2: return 1.0
             case .parakeetRealtime: return 1.0
@@ -5062,6 +5073,7 @@ final class SettingsStore: ObservableObject {
         /// Exact accuracy percentage (0.0 - 1.0) for the liquid bars
         var accuracyPercent: Double {
             switch self {
+            case .maiTranscribe2: return 0
             case .parakeetTDT: return 0.92
             case .parakeetTDTv2: return 0.96
             case .parakeetRealtime: return 0.75
@@ -5108,6 +5120,7 @@ final class SettingsStore: ObservableObject {
         /// Large Whisper models are too slow for streaming, so they only do final transcription on stop.
         var supportsStreaming: Bool {
             switch self {
+            case .maiTranscribe2: return false
             case .qwen3Asr, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return false // Too slow for real-time chunk processing
             default:
@@ -5165,11 +5178,13 @@ final class SettingsStore: ObservableObject {
             case openai = "OpenAI"
             case qwen = "Qwen"
             case cohere = "Cohere"
+            case microsoft = "Microsoft"
         }
 
         /// Which provider this model belongs to
         var provider: Provider {
             switch self {
+            case .maiTranscribe2: return .microsoft
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return .nvidia
             case .appleSpeech, .appleSpeechAnalyzer:
@@ -5191,6 +5206,7 @@ final class SettingsStore: ObservableObject {
         /// Whether this model is built-in or already downloaded on disk
         var isInstalled: Bool {
             switch self {
+            case .maiTranscribe2: return MAITranscriptionProvider.isConfigured
             case .appleSpeech, .appleSpeechAnalyzer:
                 return true
             case .parakeetTDT:
@@ -5212,14 +5228,7 @@ final class SettingsStore: ObservableObject {
                 return false
                 #endif
             case .qwen3Asr:
-                #if canImport(FluidAudio) && ENABLE_QWEN
-                if #available(macOS 15.0, *) {
-                    return Qwen3AsrModels.modelsExist(at: Qwen3AsrModels.defaultCacheDirectory())
-                }
-                return false
-                #else
-                return false
-                #endif
+                return QwenTranscriptionProvider.cached
             case .cohereTranscribeSixBit:
                 guard
                     let spec = self.externalCoreMLSpec,
@@ -5299,6 +5308,7 @@ final class SettingsStore: ObservableObject {
         /// Brand/provider name for the model (NVIDIA, Apple, OpenAI)
         var brandName: String {
             switch self {
+            case .maiTranscribe2: return "Microsoft"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return "NVIDIA"
             case .qwen3Asr:
@@ -5323,6 +5333,7 @@ final class SettingsStore: ObservableObject {
         /// Brand color for the provider badge
         var brandColorHex: String {
             switch self {
+            case .maiTranscribe2: return "#0078D4"
             case .parakeetTDT, .parakeetTDTv2, .parakeetRealtime, .nemotronOffline, .nemotronStreaming, .nemotronStreaming320:
                 return "#76B900"
             case .qwen3Asr:

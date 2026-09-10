@@ -45,6 +45,10 @@ run_public_build() {
         build
     )
 
+    if [ "${SAYSTONE_REVIEWED_PACKAGE_PLUGINS:-0}" = "1" ]; then
+        build_args+=( -skipPackagePluginValidation )
+    fi
+
     cd "${PROJECT_DIR}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
