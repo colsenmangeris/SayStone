@@ -28,3 +28,10 @@ User has a working Forge iPhone WebSocket to the Mini, wants better speech recog
 
 ## SayStone branding (2026-09-09)
 Repository: https://github.com/colsenmangeris/SayStone; upstream remote retained. Tagline: What you say becomes something you can build on. Installed signed build: ~/Applications/SayStone.app. App window, menu name and onboarding branding updated while preserving the existing design, provider logos, storage keys and com.FluidApp.app.debug identity. Build and strict deep signature verification passed. Installed UI confirms SayStone title, tagline, microphone and Accessibility grants. Previous installed FluidVoice Debug.app moved to Trash; generated build artifacts and Trash can still appear in Spotlight.
+
+## Recording compatibility candidate (2026-09-09 evening)
+The deadline-only build failed live acceptance: it avoided a stuck UI but did not restore recording during direct AudioDeviceStart stalls. Reliability remains the priority; enhancement/provider/device work is paused.
+
+The installed candidate defaults to AVAudioEngine capture, with direct capture retained under the diagnostic SayStoneDirectAudioCaptureEnabled defaults key. The default-microphone binding now preserves AVAudioEngine's managed duplex route. Unified logs showed the old binding replaced an aggregate with the input-only built-in microphone, rejected as unusable for simultaneous input/output (-10851), leaving a zero-channel format.
+
+Validation: public build, repaired framework signature, deadline regression suite and diff checks passed. Two installed-app microphone sessions received PCM and stopped through the playground UI. The first session retried once following an engine configuration change; the second reached first PCM on its first attempt (about 183 ms from backend selection). ChatGPT stayed running. User reproduction inside ChatGPT is still pending, so this is not accepted as a final reliability fix. Non-default microphone selection, hotplug and Bluetooth remain unqualified for this compatibility path; the retained AVAudioEngine startup is synchronous and the deadline does not guarantee responsiveness while it blocks the main actor.

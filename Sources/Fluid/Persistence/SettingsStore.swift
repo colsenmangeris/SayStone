@@ -1876,10 +1876,12 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    /// Direct Core Audio is the required capture backend. Legacy persisted
-    /// preferences are intentionally ignored because AVAudioEngine can block or
-    /// crash while audio devices are changing.
-    var experimentalDirectAudioCaptureEnabled: Bool { true }
+    /// Prefer the compatibility capture path while investigating direct HAL
+    /// startup stalls with concurrent system-audio capture on macOS. Keep this
+    /// diagnostic opt-in separate from upstream persisted preferences.
+    var experimentalDirectAudioCaptureEnabled: Bool {
+        self.defaults.bool(forKey: "SayStoneDirectAudioCaptureEnabled")
+    }
 
     var copyTranscriptionToClipboard: Bool {
         get { self.defaults.bool(forKey: Keys.copyTranscriptionToClipboard) }

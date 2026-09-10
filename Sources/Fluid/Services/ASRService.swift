@@ -1370,7 +1370,7 @@ final class ASRService: ObservableObject {
 
     private func startAVAudioEngineCapture() async throws {
         await self.audioEngineRetirementDrain.waitForScheduledReleases()
-        self.benchmarkLog("audio_backend kind=av_audio_engine reason=faster_recording_start_disabled")
+        self.benchmarkLog("audio_backend kind=av_audio_engine reason=saystone_compatibility_default")
         try self.configureSession()
         try await self.startEngine()
         try self.setupEngineTap()
@@ -3426,6 +3426,19 @@ final class ASRService: ObservableObject {
             "Attempting to bind AVAudioEngine input to capture device '\(device.name)' (uid: \(device.uid))",
             source: "ASRService"
         )
+
+        // AVAudioEngine owns a duplex aggregate when the system input and
+        // output are separate devices. Rebinding its shared AUHAL to an
+        // input-only device invalidates that aggregate (OSStatus -10851).
+        // Leave the engine-managed route intact when it already selects the
+        // requested system microphone.
+        if AudioDevice.getDefaultInputDevice()?.uid == device.uid {
+            AppServices.shared.microphonePreferenceCoordinator.reportResolvedSelection(
+                uid: device.uid, name: device.name
+            )
+            DebugLogger.shared.info("Using AVAudioEngine system input route", source: "ASRService")
+            return true
+        }
 
         let ok = self.setEngineInputDevice(deviceID: device.id, deviceUID: device.uid, deviceName: device.name)
         if ok == false {
