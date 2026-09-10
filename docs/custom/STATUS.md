@@ -1,10 +1,10 @@
-# Personal FluidVoice fork
+# SayStone
 
 ## Scope
 Preserve existing appearance, providers, model choices and logos. Build a permissively licensed enhancement layer. Keep Parakeet as the quality reference. Do not modify Forge or interrupt ChatGPT work during this stage.
 
 ## Baseline and reliability
-Baseline commit: 42e33e68ec473129ad090521e56c22c912a16db3. Personal origin and upstream/main configured. Signed public baseline at ~/Applications/FluidVoice Debug.app; source unchanged. It launches and loads Parakeet v2. Microphone and Accessibility grants, live transcription and insertion acceptance are pending user permission.
+Baseline commit: 42e33e68ec473129ad090521e56c22c912a16db3. Personal origin and upstream/main configured. The unchanged signed public baseline launched and loaded Parakeet v2. It has since been replaced by the patched personal build. Microphone and Accessibility grants are verified in the installed app; live reliability acceptance remains pending.
 
 Branch fix/audio-start-recovery bounds the configured hardware startup wait to three seconds. Cancel wakes the waiter immediately. The underlying operation remains owned until its existing cancellation/serialized cleanup completes. New starts are rejected while it is recovering. Failed deadlines do not blacklist the microphone. This is a containment/recovery fix for the observed AudioDeviceStart stall, not a repair of macOS Core Audio or proof that ChatGPT causes it. No other process is terminated by the fix.
 
@@ -25,3 +25,6 @@ MAI-Transcribe-2 requires a hosted provider adapter and configured credentials; 
 
 ## Cross-device requirements, not implementation decisions
 User has a working Forge iPhone WebSocket to the Mini, wants better speech recognition, shared preferences/vocabulary, and possibly a keyboard across apps. Do not replace the current connection yet. Evaluate local Mini, cloud and device execution against measured latency, availability, privacy, battery and cost. Design preferences separately from inference transport. Inspect current Forge implementation and iOS extension constraints before committing to a keyboard architecture. No Forge files changed.
+
+## SayStone branding (2026-09-09)
+Repository: https://github.com/colsenmangeris/SayStone; upstream remote retained. Tagline: What you say becomes something you can build on. Installed signed build: ~/Applications/SayStone.app. App window, menu name and onboarding branding updated while preserving the existing design, provider logos, storage keys and com.FluidApp.app.debug identity. Build and strict deep signature verification passed. Installed UI confirms SayStone title, tagline, microphone and Accessibility grants. Previous installed FluidVoice Debug.app moved to Trash; generated build artifacts and Trash can still appear in Spotlight.

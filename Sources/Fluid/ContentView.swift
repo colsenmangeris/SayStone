@@ -1298,7 +1298,7 @@ struct ContentView: View {
                 .accessibilityHidden(!self.settingsNavigation.isPresented)
         }
         .clipped()
-        .navigationTitle(self.settingsNavigation.isPresented ? "Settings" : "FluidVoice")
+        .navigationTitle(self.settingsNavigation.isPresented ? "Settings" : "SayStone")
         .tint(self.theme.palette.accent)
         .animation(self.modeTransitionAnimation, value: self.settingsNavigation.isPresented)
     }
@@ -1374,8 +1374,8 @@ struct ContentView: View {
                 reduceMotion: self.accessibilityReduceMotion
             ))
             .onHover { self.isSettingsBackHovered = $0 }
-            .help("Back to FluidVoice")
-            .accessibilityLabel("Back to FluidVoice")
+            .help("Back to SayStone")
+            .accessibilityLabel("Back to SayStone")
 
             SettingsSearchField(text: Binding(
                 get: { self.settingsSearchQuery },
@@ -1813,8 +1813,8 @@ struct ContentView: View {
                     self.instructionStep(number: "2", text: "Choose **Allow** in the system dialog")
                 } else if self.asr.micStatus == .denied {
                     self.instructionStep(number: "1", text: "Click **Open Settings** above")
-                    self.instructionStep(number: "2", text: "Find **FluidVoice** in the microphone list")
-                    self.instructionStep(number: "3", text: "Toggle **FluidVoice ON** to allow access")
+                    self.instructionStep(number: "2", text: "Find **SayStone** in the microphone list")
+                    self.instructionStep(number: "3", text: "Toggle **SayStone ON** to allow access")
                 }
             }
             .padding(.leading, 4)
@@ -4820,7 +4820,7 @@ extension ContentView {
     private func positionWindowBesideSystemSettings(requestID: UUID) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
             guard self.accessibilityGuideRequestID == requestID else { return }
-            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.title == "FluidVoice" }) ?? NSApp.keyWindow else {
+            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.title == "SayStone" }) ?? NSApp.keyWindow else {
                 return
             }
 
@@ -4989,7 +4989,7 @@ extension ContentView {
     private func cancelAccessibilityPermissionFlow() {
         self.finishAccessibilityPermissionFlow()
         NSApp.activate(ignoringOtherApps: true)
-        (NSApp.windows.first { $0.isVisible && $0.title == "FluidVoice" } ?? NSApp.keyWindow)?
+        (NSApp.windows.first { $0.isVisible && $0.title == "SayStone" } ?? NSApp.keyWindow)?
             .makeKeyAndOrderFront(nil)
     }
 

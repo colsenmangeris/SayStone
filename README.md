@@ -1,4 +1,11 @@
-# FluidVoice
+# SayStone
+
+**What you say becomes something you can build on.**
+
+Personal speech-to-text fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), preserving its recognition providers and design.
+
+## Upstream FluidVoice
+
 
 <p align="center">
   <a href="https://github.com/altic-dev/FluidVoice/stargazers"><img src="https://img.shields.io/github/stars/altic-dev/FluidVoice?style=social" alt="GitHub stars"/></a>

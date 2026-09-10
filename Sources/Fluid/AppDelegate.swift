@@ -318,7 +318,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private func isMainWindow(_ window: NSWindow) -> Bool {
         guard window.level == .normal else { return false }
         guard window.styleMask.contains(.titled) else { return false }
-        return window.title == "FluidVoice" || window.title.contains("FluidVoice")
+        return window.title.contains("SayStone") || window.title.contains("FluidVoice")
     }
 
     // MARK: - Periodic Update Checks
