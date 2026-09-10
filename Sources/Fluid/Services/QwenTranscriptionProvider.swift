@@ -34,7 +34,7 @@ final class QwenTranscriptionProvider: TranscriptionProvider {
         #if arch(arm64) && canImport(Qwen3ASR)
         progressHandler?(.preparingDownload)
         let loaded = try await Qwen3ASRModel.fromPretrained(
-            modelId: Self.modelID, cacheDir: Self.cacheDirectory,
+            modelId: Self.modelID, cacheDir: Self.cacheDirectory, offlineMode: Self.cached,
             progressHandler: { fraction, _ in progressHandler?(.downloading(fraction)) }
         )
         try Task.checkCancellation()

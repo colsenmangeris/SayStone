@@ -95,6 +95,10 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
             models = models.filter { $0.provider == .cohere }
         case .openai:
             models = models.filter { $0.provider == .openai }
+        case .qwen:
+            models = models.filter { $0.provider == .qwen }
+        case .microsoft:
+            models = models.filter { $0.provider == .microsoft }
         }
 
         if self.englishOnlyFilter {

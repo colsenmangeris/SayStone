@@ -55,3 +55,5 @@ Validation: signed public build and strict deep signature verification passed; e
 Build prerequisite: Apple Metal Toolchain installed using xcodebuild -downloadComponent MetalToolchain. Xcode asked to approve the MLX package build plugin; its source was inspected (CUDA work is disabled on this Mac). For this reviewed dependency graph, build with SAYSTONE_REVIEWED_PACKAGE_PLUGINS=1 ./build.sh public, or approve the package plugin in Xcode. The flag is per-build, not a global Xcode trust change. Re-review plugins when updating dependencies. Generated CTranscribe bundle repair remains required.
 
 Cross-device source audit and proposed next steps: CROSS_DEVICE.md. No Mini service, Forge application or iPhone deployment was modified.
+
+Final provider UI check: Qwen appears with Activate and MAI shows Configure Azure; Parakeet v2 remains Active and microphone/Accessibility grants are still present. Qwen/Microsoft are included in the provider filter. Cached Qwen loads use the runtime offline mode.
