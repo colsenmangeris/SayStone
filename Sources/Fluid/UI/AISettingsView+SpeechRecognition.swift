@@ -105,7 +105,6 @@ extension VoiceEngineSettingsView {
                             }
                         }
 
-                        SystemMicrophonePicker()
                         MAISpeechSettingsView(settings: self.settings,
                             activate: { self.viewModel.activateSpeechModel(.maiTranscribe2) },
                             actionsBlocked: self.viewModel.areSpeechModelActionsBlocked)

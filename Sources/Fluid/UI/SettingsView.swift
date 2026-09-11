@@ -2556,7 +2556,7 @@ private extension SettingsView {
                 systemImage: "exclamationmark.triangle.fill",
                 color: self.theme.palette.warning
             )
-        } else {
+        } else if self.settings.experimentalDirectAudioCaptureEnabled {
             self.microphoneQualityGuidanceRow(
                 message: "This order applies only to FluidVoice and does not change your macOS input.",
                 systemImage: "info.circle",
