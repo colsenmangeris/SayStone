@@ -4732,7 +4732,7 @@ final class SettingsStore: ObservableObject {
 
         var downloadSize: String {
             switch self {
-            case .maiTranscribe2: return "Cloud · Azure key required"
+            case .maiTranscribe2: return "Cloud · API key required"
             case .parakeetTDT: return "~460.9 MiB"
             case .parakeetTDTv2: return "~442.9 MiB"
             case .parakeetRealtime: return "~428.4 MiB"
@@ -4920,7 +4920,7 @@ final class SettingsStore: ObservableObject {
         /// One-line description for the card UI
         var cardDescription: String {
             switch self {
-            case .maiTranscribe2: return "Hosted transcription through your Azure Speech resource. Audio is sent to Microsoft; usage charges apply."
+            case .maiTranscribe2: return "Hosted transcription through OpenRouter or Azure, with verbatim and clean styles. Audio is uploaded; usage charges apply."
             case .parakeetTDT:
                 return "Fast multilingual transcription. Supports Bulgarian, Croatian, Czech, Danish, " +
                     "Dutch, English, Estonian, Finnish, French, German, Greek, Hungarian, Italian, " +

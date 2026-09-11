@@ -27,6 +27,32 @@ import Foundation
             do { _ = try MAITranscriptionRequest.text(from: response, status: status); fatalError("Accepted failed response") } catch {}
         }
         do { _ = try MAITranscriptionRequest.text(from: Data("{}".utf8), status: 200); fatalError("Accepted malformed response") } catch {}
-        print("PASS: Azure endpoint validation, WAV clipping/header, multipart model/style, schema and HTTP errors")
+        for style in MAITranscriptionRequest.Style.allCases {
+            let router = try MAITranscriptionRequest.make(samples: [-2, 0, 2], resource: "", key: "test-key", style: style, openRouter: true)
+            precondition(router.url?.absoluteString == "https://openrouter.ai/api/v1/audio/transcriptions")
+            precondition(router.value(forHTTPHeaderField: "Authorization") == "Bearer test-key")
+            precondition(router.value(forHTTPHeaderField: "Ocp-Apim-Subscription-Key") == nil)
+            let json = try JSONSerialization.jsonObject(with: router.httpBody!) as! [String: Any]
+            precondition(json["model"] as? String == "microsoft/mai-transcribe-2")
+            let input = json["input_audio"] as! [String: String]
+            let audio = Data(base64Encoded: input["data"]!)!
+            precondition(input["format"] == "wav" && audio.count == 50)
+            precondition(Array(audio[44..<50]) == [1, 128, 0, 0, 255, 127])
+            let provider = json["provider"] as! [String: Any]
+            let options = provider["options"] as! [String: Any]
+            let azure = options["azure"] as! [String: Any]
+            let enhanced = azure["enhancedMode"] as! [String: Any]
+            let modelOptions = enhanced["modelOptions"] as! [String: String]
+            precondition(modelOptions["transcribeStyle"] == style.rawValue)
+            let azureRequest = try MAITranscriptionRequest.make(samples: [0], resource: "my-speech", key: "test-key", style: style)
+            precondition(String(decoding: azureRequest.httpBody!, as: UTF8.self).contains("\"transcribeStyle\":\"\(style.rawValue)\""))
+        }
+        let routerText = try MAITranscriptionRequest.text(from: Data(#"{"text":"Hello."}"#.utf8), status: 200, openRouter: true)
+        precondition(routerText == "Hello.")
+        for status in [401, 402, 403, 429, 500] {
+            do { _ = try MAITranscriptionRequest.text(from: response, status: status, openRouter: true); fatalError("Accepted error") } catch {}
+        }
+        do { _ = try MAITranscriptionRequest.text(from: response, status: 200, openRouter: true); fatalError("Accepted Azure schema for OpenRouter") } catch {}
+        print("PASS: OpenRouter routing/styles/schema and Azure endpoint validation, WAV clipping/header, multipart model/style, schema and HTTP errors")
     }
 }

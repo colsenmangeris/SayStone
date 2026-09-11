@@ -450,7 +450,7 @@ extension VoiceEngineSettingsView {
                     .disabled(self.viewModel.asr.isCancellingModelPreparation)
                 }
             } else if model == .maiTranscribe2 && !model.isInstalled {
-                Text("Configure Azure above").font(.caption).foregroundStyle(.secondary)
+                Text("Configure MAI above").font(.caption).foregroundStyle(.secondary)
             } else if model.isInstalled {
                 HStack(spacing: 8) {
                     if isActive {

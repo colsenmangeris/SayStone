@@ -57,3 +57,9 @@ Build prerequisite: Apple Metal Toolchain installed using xcodebuild -downloadCo
 Cross-device source audit and proposed next steps: CROSS_DEVICE.md. No Mini service, Forge application or iPhone deployment was modified.
 
 Final provider UI check: Qwen appears with Activate and MAI shows Configure Azure; Parakeet v2 remains Active and microphone/Accessibility grants are still present. Qwen/Microsoft are included in the provider filter. Cached Qwen loads use the runtime offline mode.
+
+## OpenRouter MAI connection (2026-09-10)
+Added OpenRouter and retained Azure under Voice Engine > MAI-Transcribe-2 Connection. Both accept explicit Verbatim/Clean styles. OpenRouter uses its dedicated /api/v1/audio/transcriptions endpoint with base64 WAV JSON and provider.options.azure.enhancedMode.modelOptions.transcribeStyle. Separate Keychain entry saystone-openrouter-speech; key never stored in defaults. Save does not activate MAI, upload audio, or claim successful authentication. Existing Azure route remains the persisted fallback until the user saves another route.
+
+Validation: request tests cover both styles, both response schemas, destination/auth separation, WAV encoding and HTTP errors. Signed public build and installed strict deep signature verification passed. Installation needed a fresh bundle copy because overlay copying left a stale sealed resource; fresh copy passed. Prior installed app is archived as saystone-before-openrouter.zip outside git. Installed UI verified OpenRouter/Verbatim controls and secure key field; Parakeet v2 remains active, microphone and Accessibility permissions granted. User key entry and live API acceptance remain pending.
+Source: https://openrouter.ai/docs/guides/overview/multimodal/stt and https://openrouter.ai/microsoft/mai-transcribe-2
