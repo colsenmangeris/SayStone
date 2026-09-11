@@ -105,7 +105,10 @@ extension VoiceEngineSettingsView {
                             }
                         }
 
-                        MAISpeechSettingsView(settings: self.settings)
+                        SystemMicrophonePicker()
+                        MAISpeechSettingsView(settings: self.settings,
+                            activate: { self.viewModel.activateSpeechModel(.maiTranscribe2) },
+                            actionsBlocked: self.viewModel.areSpeechModelActionsBlocked)
 
                         // Active + Other models list
                         VStack(alignment: .leading, spacing: 10) {

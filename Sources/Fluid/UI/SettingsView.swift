@@ -1168,7 +1168,13 @@ struct SettingsView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 12) {
-                            self.microphonePrioritySection
+                            Group {
+                                if self.settings.experimentalDirectAudioCaptureEnabled {
+                                    self.microphonePrioritySection
+                                } else {
+                                    SystemMicrophonePicker()
+                                }
+                            }
                                 .settingsSearchTarget(.inputDevicePriority)
                                 .onChange(of: self.inputDevices) { _, newDevices in
                                     let defaultInput = AudioDevice.getDefaultInputDevice()

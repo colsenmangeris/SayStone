@@ -3,6 +3,8 @@ import Combine
 
 struct MAISpeechSettingsView: View {
     @ObservedObject var settings: SettingsStore
+    var activate: () -> Void
+    var actionsBlocked: Bool
     @State private var resource = MAITranscriptionProvider.resource
     @State private var route = MAITranscriptionProvider.route
     @State private var style = MAITranscriptionProvider.style
@@ -47,6 +49,14 @@ struct MAISpeechSettingsView: View {
                         message = "Saved in Keychain. Connection not yet tested. Your active model has not changed."
                     } catch { message = error.localizedDescription }
                 }
+                Text("Selected voice engine: \(settings.selectedSpeechModel.displayName)")
+                    .font(.caption.bold())
+                if settings.selectedSpeechModel != .maiTranscribe2 {
+                    Button("Activate MAI-Transcribe-2", action: activate)
+                        .disabled(!MAITranscriptionProvider.isConfigured || actionsBlocked)
+                }
+                Text("This connection is for speech recognition. OpenRouter in AI Providers configures text cleanup separately.")
+                    .font(.caption).foregroundStyle(.secondary)
                 if !message.isEmpty { Text(message).font(.caption) }
             }.textFieldStyle(.roundedBorder).padding(.top, 8)
         }.padding(.vertical, 8)

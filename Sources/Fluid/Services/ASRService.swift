@@ -3432,6 +3432,16 @@ final class ASRService: ObservableObject {
             return false
         }
 
+        if !SettingsStore.shared.experimentalDirectAudioCaptureEnabled {
+            // Preserve the engine-managed aggregate; never rebind its AUHAL
+            // to an input-only device, even if the default changes mid-start.
+            AppServices.shared.microphonePreferenceCoordinator.reportResolvedSelection(
+                uid: device.uid, name: device.name
+            )
+            DebugLogger.shared.info("Following macOS input: \(device.name)", source: "ASRService")
+            return true
+        }
+
         DebugLogger.shared.debug(
             "Attempting to bind AVAudioEngine input to capture device '\(device.name)' (uid: \(device.uid))",
             source: "ASRService"

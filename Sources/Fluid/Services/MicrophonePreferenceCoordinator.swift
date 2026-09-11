@@ -353,6 +353,13 @@ final class MicrophonePreferenceCoordinator: ObservableObject {
         }
         guard usableInputs.isEmpty == false else { return nil }
 
+        // AVAudioEngine owns the system duplex route. Do not let a legacy
+        // priority list select a different physical input for this backend.
+        if !self.settings.experimentalDirectAudioCaptureEnabled {
+            guard let uid = defaultInputUID else { return nil }
+            return usableInputs.first { $0.uid == uid }
+        }
+
         for entry in self.settings.microphonePriority {
             if let input = usableInputs.first(where: { $0.uid == entry.uid }) {
                 return input
