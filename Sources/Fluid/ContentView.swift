@@ -2312,6 +2312,12 @@ struct ContentView: View {
 
         DebugLogger.shared.debug("processTextWithAI using provider=\(derivedCurrentProvider), model=\(derivedSelectedModel)", source: "ContentView")
 
+        if derivedCurrentProvider == "ollama",
+           derivedSelectedModel == LocalPunctuationCleanup.model {
+            let cleaned = await LocalPunctuationCleanup.clean(inputText)
+            return AITextProcessingResult(text: cleaned, tokensPerSecond: nil, fluidIntelligenceLatencyMilliseconds: nil)
+        }
+
         let isDictationCall = overrideSystemPrompt != nil || dictationSlot != nil
         let isPrivateAIProvider = route.usesPrivateAI
         let usePrivateAIProvider = overrideSystemPrompt == nil &&
