@@ -2576,15 +2576,9 @@ struct ContentView: View {
         let activeDictationSlot = self.currentDictationShortcutSlot(for: modeAtStop)
         let promptOverride = self.promptModeOverrideText
         let promptTest = DictationPromptTestCoordinator.shared
-        let shouldUseAIOnStop = activeDictationSlot.map {
-            DictationAIPostProcessingGate.isConfigured(for: $0, appBundleID: self.recordingAppInfo?.bundleId)
-        } ?? DictationAIPostProcessingGate.isConfigured(for: .primary, appBundleID: self.recordingAppInfo?.bundleId)
-        let shouldHideOverlayOnStop = route == .normal &&
-            !wasRewriteMode &&
-            !wasCommandMode &&
-            !promptTest.isActive &&
-            !shouldUseAIOnStop &&
-            !self.settings.spokenSendEnabled
+        // Keep feedback visible through final recognition and delivery, even
+        // when no separate AI cleanup provider is selected.
+        let shouldHideOverlayOnStop = false
         DebugLogger.shared.info(
             "Routing decision snapshot | activeMode=\(modeAtStop.rawValue) | rewrite=\(wasRewriteMode) | command=\(wasCommandMode) | overlay=\(NotchContentState.shared.mode.rawValue)",
             source: "ContentView"

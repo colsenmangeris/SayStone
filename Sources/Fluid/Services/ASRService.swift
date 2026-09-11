@@ -3093,10 +3093,18 @@ final class ASRService: ObservableObject {
                 }
             }
 
-            // Note: We intentionally do NOT show an error popup here.
-            // Common errors like "audio too short" are expected during normal use
-            // (e.g., accidental hotkey press) and would disrupt the user's workflow.
-            // Errors are logged for debugging purposes.
+            if !(error is CancellationError), !capturedPCM.isEmpty {
+                var recoveryMessage = ""
+                do {
+                    let recoveryURL = try FailedDictationRecovery.save(samples: capturedPCM)
+                    recoveryMessage = "\n\nAudio saved to \(recoveryURL.path). Use File Transcription to retry it, including with Parakeet. This file holds the latest failed recording."
+                } catch {
+                    recoveryMessage = "\n\nCould not save recovery audio: \(error.localizedDescription)"
+                }
+                self.errorTitle = "Transcription Failed"
+                self.errorMessage = error.localizedDescription + recoveryMessage
+                self.showError = true
+            }
 
             // Resume media playback if we paused it
             if shouldResumeMedia {
