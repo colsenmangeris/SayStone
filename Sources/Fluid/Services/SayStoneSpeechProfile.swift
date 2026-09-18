@@ -2,6 +2,8 @@ import CryptoKit
 import Foundation
 
 nonisolated struct SayStoneSpeechProfileDocument: Codable, Equatable, Sendable {
+    static let currentSchemaRevision = 2
+
     let schemaRevision: Int
     var revision: Int
     var updatedAt: String
@@ -27,6 +29,17 @@ nonisolated struct SayStoneSpeechProfileDocument: Codable, Equatable, Sendable {
         var from: String?
         var to: String?
         var setting: PreferenceSetting?
+        var dictionaryEntryId: String? = nil
+        var label: String? = nil
+        var modelKey: String? = nil
+        var hiddenSize: Int? = nil
+        var enrollments: [PronunciationEnrollment]? = nil
+
+        struct PronunciationEnrollment: Codable, Equatable, Sendable {
+            let values: [Float]
+            let sourceFrameCount: Int
+            let modelKey: String
+        }
 
         struct PreferenceSetting: Codable, Equatable, Sendable {
             let key: String
@@ -78,7 +91,7 @@ nonisolated struct SayStoneSpeechProfileDocument: Codable, Equatable, Sendable {
 
     static func empty(updatedAt: String) -> Self {
         Self(
-            schemaRevision: 1,
+            schemaRevision: Self.currentSchemaRevision,
             revision: 0,
             updatedAt: updatedAt,
             pronunciation: nil,
@@ -100,9 +113,18 @@ nonisolated struct SayStoneSpeechProfileLocalSnapshot: Equatable, Sendable {
         let replacement: String
     }
 
+    struct PronunciationProfile: Equatable, Sendable {
+        let dictionaryEntryID: UUID
+        let label: String
+        let modelKey: String
+        let hiddenSize: Int
+        let enrollments: [SayStoneSpeechProfileDocument.Entry.PronunciationEnrollment]
+    }
+
     let words: [Word]
     let replacements: [Replacement]
     let punctuationEnabled: Bool
+    let pronunciationProfiles: [PronunciationProfile]
 }
 
 nonisolated enum SayStoneSpeechProfileReconciler {
@@ -150,13 +172,18 @@ nonisolated enum SayStoneSpeechProfileReconciler {
             changed = true
         }
 
+        let pronunciation = snapshot.pronunciationProfiles
+            .sorted { $0.dictionaryEntryID.uuidString < $1.dictionaryEntryID.uuidString }
+            .first
+            .map { Document.PronunciationCompatibility(modelKey: $0.modelKey, hiddenSize: $0.hiddenSize) }
+
         return Result(
             changed: changed,
             document: Document(
-                schemaRevision: 1,
+                schemaRevision: Document.currentSchemaRevision,
                 revision: cached.revision,
                 updatedAt: changed ? now : cached.updatedAt,
-                pronunciation: cached.pronunciation,
+                pronunciation: pronunciation,
                 entries: resultByID.values.sorted { $0.id < $1.id }
             )
         )
@@ -192,10 +219,38 @@ nonisolated enum SayStoneSpeechProfileReconciler {
             $0.kind == "preference" && $0.setting?.key == "punctuation"
         }?.setting?.boolValue ?? true
 
+        let pronunciationProfiles = active.compactMap {
+            entry -> SayStoneSpeechProfileLocalSnapshot.PronunciationProfile? in
+            guard entry.kind == "pronunciation",
+                  let rawID = entry.dictionaryEntryId,
+                  let dictionaryEntryID = UUID(uuidString: rawID),
+                  let label = entry.label,
+                  let modelKey = entry.modelKey,
+                  let hiddenSize = entry.hiddenSize,
+                  hiddenSize > 0,
+                  let enrollments = entry.enrollments,
+                  !enrollments.isEmpty,
+                  enrollments.allSatisfy({
+                      $0.modelKey == modelKey && $0.values.count == hiddenSize && $0.sourceFrameCount > 0
+                  })
+            else { return nil }
+            return .init(
+                dictionaryEntryID: dictionaryEntryID,
+                label: label,
+                modelKey: modelKey,
+                hiddenSize: hiddenSize,
+                enrollments: Array(enrollments.prefix(10))
+            )
+        }.sorted { lhs, rhs in
+            if lhs.dictionaryEntryID == rhs.dictionaryEntryID { return lhs.modelKey < rhs.modelKey }
+            return lhs.dictionaryEntryID.uuidString < rhs.dictionaryEntryID.uuidString
+        }
+
         return .init(
             words: Array(words.prefix(256)),
             replacements: replacements,
-            punctuationEnabled: punctuationEnabled
+            punctuationEnabled: punctuationEnabled,
+            pronunciationProfiles: pronunciationProfiles
         )
     }
 
@@ -269,6 +324,42 @@ nonisolated enum SayStoneSpeechProfileReconciler {
             }
         }
 
+        for profile in snapshot.pronunciationProfiles.prefix(256) {
+            let enrollments = Array(profile.enrollments.prefix(10))
+            guard profile.hiddenSize > 0,
+                  profile.hiddenSize <= 4096,
+                  !enrollments.isEmpty,
+                  enrollments.allSatisfy({
+                      $0.modelKey == profile.modelKey &&
+                          $0.values.count == profile.hiddenSize &&
+                          $0.sourceFrameCount > 0 &&
+                          $0.values.allSatisfy(\.isFinite)
+                  })
+            else { continue }
+            entries.append(
+                Entry(
+                    id: "pronunciation-\(profile.dictionaryEntryID.uuidString.lowercased())-\(self.digest(profile.modelKey))",
+                    revision: 0,
+                    updatedAt: "",
+                    updatedByDeviceId: "",
+                    deleted: false,
+                    kind: "pronunciation",
+                    text: nil,
+                    weight: nil,
+                    alias: nil,
+                    canonical: nil,
+                    from: nil,
+                    to: nil,
+                    setting: nil,
+                    dictionaryEntryId: profile.dictionaryEntryID.uuidString.lowercased(),
+                    label: profile.label,
+                    modelKey: profile.modelKey,
+                    hiddenSize: profile.hiddenSize,
+                    enrollments: enrollments
+                )
+            )
+        }
+
         entries.append(
             Entry(
                 id: "preference-punctuation",
@@ -306,7 +397,27 @@ nonisolated enum SayStoneSpeechProfileReconciler {
             entry.setting?.key ?? "",
             entry.setting?.boolValue.map(String.init) ?? "",
             entry.setting?.stringValue ?? "",
+            entry.dictionaryEntryId ?? "",
+            entry.label ?? "",
+            entry.modelKey ?? "",
+            entry.hiddenSize.map(String.init) ?? "",
+            self.pronunciationDigest(entry.enrollments ?? []),
         ].joined(separator: "\u{1f}")
+    }
+
+    private static func pronunciationDigest(
+        _ enrollments: [SayStoneSpeechProfileDocument.Entry.PronunciationEnrollment]
+    ) -> String {
+        var data = Data()
+        for enrollment in enrollments {
+            data.append(contentsOf: enrollment.modelKey.utf8)
+            data.append(0)
+            withUnsafeBytes(of: enrollment.sourceFrameCount.bigEndian) { data.append(contentsOf: $0) }
+            for value in enrollment.values {
+                withUnsafeBytes(of: value.bitPattern.bigEndian) { data.append(contentsOf: $0) }
+            }
+        }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     private static func digest(_ value: String) -> String {

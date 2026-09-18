@@ -36,12 +36,14 @@ resolve_development_team() {
 run_public_build() {
     local signing_mode="$1"
     local development_team
+    local engine_xcconfig="${DERIVED_DATA_PATH}/SayStoneEngineManifest.xcconfig"
     local -a build_args=(
         -project Fluid.xcodeproj
         -scheme Fluid
         -configuration Debug
         -destination 'platform=macOS'
         -derivedDataPath "${DERIVED_DATA_PATH}"
+        -xcconfig "${engine_xcconfig}"
         build
     )
 
@@ -50,6 +52,18 @@ run_public_build() {
     fi
 
     cd "${PROJECT_DIR}"
+    local -a manifest_args=(
+        "${PROJECT_DIR}/scripts/local/generate-engine-xcconfig.py"
+        --source-root "${PROJECT_DIR}"
+        --output "${engine_xcconfig}"
+    )
+    if [ "${SAYSTONE_REQUIRE_ENGINE_MANIFEST:-0}" = "1" ]; then
+        manifest_args+=( --require-model )
+    fi
+    if [ -n "${SAYSTONE_MODEL_DIRECTORY:-}" ]; then
+        manifest_args+=( --model-directory "${SAYSTONE_MODEL_DIRECTORY}" )
+    fi
+    python3 "${manifest_args[@]}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
         echo "Running unsigned public FluidVoice build..."

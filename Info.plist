@@ -16,6 +16,20 @@
 	<string>22</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.6.10</string>
+	<key>SayStoneEngineModelKey</key>
+	<string>$(SAYSTONE_ENGINE_MODEL_KEY)</string>
+	<key>SayStoneEngineModelRevision</key>
+	<string>$(SAYSTONE_ENGINE_MODEL_REVISION)</string>
+	<key>SayStoneEngineModelSha256</key>
+	<string>$(SAYSTONE_ENGINE_MODEL_SHA256)</string>
+	<key>SayStoneEngineRuntimeCommit</key>
+	<string>$(SAYSTONE_ENGINE_RUNTIME_COMMIT)</string>
+	<key>SayStoneEnginePipelineRevision</key>
+	<string>$(SAYSTONE_ENGINE_PIPELINE_REVISION)</string>
+	<key>SayStoneEngineProfileSchemaRevision</key>
+	<string>$(SAYSTONE_ENGINE_PROFILE_SCHEMA_REVISION)</string>
+	<key>SayStoneEngineFluidAudioRevision</key>
+	<string>$(SAYSTONE_ENGINE_FLUIDAUDIO_REVISION)</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSApplicationCategoryType</key>

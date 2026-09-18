@@ -4,10 +4,26 @@ import Foundation
 struct SayStoneSpeechProfileTests {
     static func main() throws {
         let replacementID = UUID(uuidString: "CB3A3497-3F89-4D62-8B04-1E61D24B3A70")!
+        let dictionaryEntryID = UUID(uuidString: "8899D64E-3868-4A76-A10F-6DB35E4B3394")!
         let snapshot = SayStoneSpeechProfileLocalSnapshot(
             words: [.init(text: "Oikonomos", weight: 10, aliases: ["economos"])],
             replacements: [.init(id: replacementID, triggers: ["say stone"], replacement: "SayStone")],
-            punctuationEnabled: true
+            punctuationEnabled: true,
+            pronunciationProfiles: [
+                .init(
+                    dictionaryEntryID: dictionaryEntryID,
+                    label: "Oikonomos",
+                    modelKey: "parakeet-v2",
+                    hiddenSize: 2,
+                    enrollments: [
+                        .init(
+                            values: [0.25, -0.5],
+                            sourceFrameCount: 42,
+                            modelKey: "parakeet-v2"
+                        ),
+                    ]
+                ),
+            ]
         )
         let empty = SayStoneSpeechProfileDocument.empty(updatedAt: "2026-09-18T10:00:00Z")
         let created = SayStoneSpeechProfileReconciler.reconcile(
@@ -18,7 +34,11 @@ struct SayStoneSpeechProfileTests {
         )
         precondition(created.changed)
         precondition(created.document.entries.allSatisfy { $0.revision == 1 && !$0.deleted })
-        precondition(created.document.entries.map(\.kind).sorted() == ["alias", "preference", "replacement", "word"])
+        precondition(created.document.schemaRevision == 2)
+        precondition(created.document.entries.map(\.kind).sorted() == [
+            "alias", "preference", "pronunciation", "replacement", "word",
+        ])
+        precondition(created.document.pronunciation == .init(modelKey: "parakeet-v2", hiddenSize: 2))
 
         let unchanged = SayStoneSpeechProfileReconciler.reconcile(
             snapshot: snapshot,
@@ -33,13 +53,18 @@ struct SayStoneSpeechProfileTests {
         precondition(restored == snapshot)
 
         let deleted = SayStoneSpeechProfileReconciler.reconcile(
-            snapshot: .init(words: [], replacements: [], punctuationEnabled: true),
+            snapshot: .init(
+                words: [],
+                replacements: [],
+                punctuationEnabled: true,
+                pronunciationProfiles: []
+            ),
             cached: created.document,
             deviceID: "mini",
             now: "2026-09-18T10:03:00Z"
         )
         let deletedKinds = deleted.document.entries.filter { $0.deleted }.map(\.kind).sorted()
-        precondition(deletedKinds == ["alias", "replacement", "word"])
+        precondition(deletedKinds == ["alias", "pronunciation", "replacement", "word"])
         precondition(deleted.document.entries.filter { $0.deleted }.allSatisfy { $0.revision == 2 })
         precondition(deleted.document.entries.first { $0.kind == "preference" }?.deleted == false)
 

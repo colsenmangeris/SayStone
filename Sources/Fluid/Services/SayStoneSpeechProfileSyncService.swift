@@ -67,7 +67,7 @@ actor SayStoneSpeechProfileSyncService {
                 ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
             self.cacheURL = baseURL
                 .appendingPathComponent("FluidVoice", isDirectory: true)
-                .appendingPathComponent("saystone-speech-profile-sync-v1.json")
+                .appendingPathComponent("saystone-speech-profile-sync-v2.json")
         }
     }
 
@@ -222,7 +222,9 @@ actor SayStoneSpeechProfileSyncService {
         if self.fileManager.fileExists(atPath: self.cacheURL.path) {
             let data = try Data(contentsOf: self.cacheURL)
             let decoded = try JSONDecoder().decode(Cache.self, from: data)
-            guard decoded.version == 1, decoded.authority.schemaRevision == 1 else {
+            guard decoded.version == 2,
+                  decoded.authority.schemaRevision == SayStoneSpeechProfileDocument.currentSchemaRevision
+            else {
                 throw SyncError.invalidResponse
             }
             try Self.validate(decoded.authority)
@@ -231,7 +233,7 @@ actor SayStoneSpeechProfileSyncService {
         }
         let now = Self.timestamp()
         return Cache(
-            version: 1,
+            version: 2,
             deviceID: "saystone-\(UUID().uuidString.lowercased())",
             authority: .empty(updatedAt: now),
             pending: nil
@@ -251,7 +253,8 @@ actor SayStoneSpeechProfileSyncService {
     }
 
     private func captureLocalSnapshot() async throws -> SayStoneSpeechProfileLocalSnapshot {
-        try await MainActor.run {
+        let storedPronunciations = await PronunciationDictionaryStore.shared.allProfiles()
+        return try await MainActor.run {
             let words = try ParakeetVocabularyStore.shared.loadUserBoostTerms().map {
                 SayStoneSpeechProfileLocalSnapshot.Word(
                     text: $0.text,
@@ -269,13 +272,44 @@ actor SayStoneSpeechProfileSyncService {
             return SayStoneSpeechProfileLocalSnapshot(
                 words: words,
                 replacements: replacements,
-                punctuationEnabled: SettingsStore.shared.autoConvertPunctuationEnabled
+                punctuationEnabled: SettingsStore.shared.autoConvertPunctuationEnabled,
+                pronunciationProfiles: storedPronunciations.map { profile in
+                    .init(
+                        dictionaryEntryID: profile.dictionaryEntryID,
+                        label: profile.label,
+                        modelKey: profile.modelKey,
+                        hiddenSize: profile.hiddenSize,
+                        enrollments: profile.enrollments.map { enrollment in
+                            .init(
+                                values: enrollment.values,
+                                sourceFrameCount: enrollment.sourceFrameCount,
+                                modelKey: enrollment.modelKey
+                            )
+                        }
+                    )
+                }
             )
         }
     }
 
     private func apply(_ document: SayStoneSpeechProfileDocument) async throws {
         let snapshot = SayStoneSpeechProfileReconciler.localSnapshot(from: document)
+        let pronunciationProfiles = snapshot.pronunciationProfiles.map { profile in
+            PronunciationDictionaryProfile(
+                dictionaryEntryID: profile.dictionaryEntryID,
+                label: profile.label,
+                modelKey: profile.modelKey,
+                hiddenSize: profile.hiddenSize,
+                enrollments: profile.enrollments.map { enrollment in
+                    PronunciationEnrollmentCapture(
+                        values: enrollment.values,
+                        sourceFrameCount: enrollment.sourceFrameCount,
+                        modelKey: enrollment.modelKey
+                    )
+                }
+            )
+        }
+        try await PronunciationDictionaryStore.shared.replaceAllProfiles(pronunciationProfiles)
         try await MainActor.run {
             let terms = snapshot.words.map {
                 ParakeetVocabularyStore.VocabularyConfig.Term(
@@ -299,12 +333,35 @@ actor SayStoneSpeechProfileSyncService {
     }
 
     private static func validate(_ document: SayStoneSpeechProfileDocument) throws {
-        guard document.schemaRevision == 1,
+        guard document.schemaRevision == SayStoneSpeechProfileDocument.currentSchemaRevision,
               document.revision >= 0,
+              document.revision > 0 || document.entries.isEmpty,
               document.entries.count <= 4096,
               Set(document.entries.map(\.id)).count == document.entries.count,
               document.entries.allSatisfy({
-                  !$0.id.isEmpty && $0.id.count <= 128 && $0.revision > 0 && !$0.updatedByDeviceId.isEmpty
+                  guard !$0.id.isEmpty,
+                        $0.id.count <= 128,
+                        $0.revision > 0,
+                        !$0.updatedByDeviceId.isEmpty
+                  else { return false }
+                  guard $0.kind == "pronunciation" else { return true }
+                  guard let dictionaryEntryId = $0.dictionaryEntryId,
+                        UUID(uuidString: dictionaryEntryId) != nil,
+                        let label = $0.label,
+                        !label.isEmpty,
+                        let modelKey = $0.modelKey,
+                        modelKey.hasPrefix("parakeet-"),
+                        let hiddenSize = $0.hiddenSize,
+                        (1 ... 4096).contains(hiddenSize),
+                        let enrollments = $0.enrollments,
+                        (1 ... 10).contains(enrollments.count)
+                  else { return false }
+                  return enrollments.allSatisfy { enrollment in
+                      enrollment.modelKey == modelKey &&
+                          enrollment.sourceFrameCount > 0 &&
+                          enrollment.values.count == hiddenSize &&
+                          enrollment.values.allSatisfy(\.isFinite)
+                  }
               }) || (document.revision == 0 && document.entries.isEmpty)
         else { throw SyncError.invalidResponse }
     }
