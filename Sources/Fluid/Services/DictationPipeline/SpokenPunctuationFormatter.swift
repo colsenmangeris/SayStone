@@ -1,27 +1,6 @@
 import Foundation
 
-extension ASRService {
-    static func applySpokenPunctuationFormatting(
-        _ text: String,
-        appName: String? = nil,
-        bundleID: String? = nil,
-        windowTitle: String? = nil
-    ) -> String {
-        let settings = SettingsStore.shared
-        guard settings.autoConvertPunctuationEnabled else { return text }
-        return SpokenPunctuationFormatter.apply(
-            text,
-            prefix: settings.punctuationDictionaryPrefix,
-            rules: settings.punctuationDictionaryRules,
-            actionRules: settings.spokenFormattingActionRules,
-            appName: appName,
-            bundleID: bundleID,
-            windowTitle: windowTitle
-        )
-    }
-}
-
-private enum SpokenPunctuationFormatter {
+enum SpokenPunctuationFormatter {
     private struct FormattingContext {
         let appName: String?
         let bundleID: String?
@@ -126,8 +105,8 @@ private enum SpokenPunctuationFormatter {
     static func apply(
         _ text: String,
         prefix: String,
-        rules dictionaryRules: [SettingsStore.PunctuationDictionaryRule],
-        actionRules: [SettingsStore.SpokenFormattingActionRule],
+        rules dictionaryRules: [SharedDictationPipeline.PunctuationRule],
+        actionRules: [SharedDictationPipeline.FormattingActionRule],
         appName: String? = nil,
         bundleID: String? = nil,
         windowTitle: String? = nil
@@ -181,7 +160,9 @@ private enum SpokenPunctuationFormatter {
         }
     }
 
-    private static func makeRules(from dictionaryRules: [SettingsStore.PunctuationDictionaryRule]) -> [PhraseRule] {
+    private static func makeRules(
+        from dictionaryRules: [SharedDictationPipeline.PunctuationRule]
+    ) -> [PhraseRule] {
         dictionaryRules.flatMap { rule in
             self.rules(
                 symbol: rule.symbol,
@@ -192,7 +173,7 @@ private enum SpokenPunctuationFormatter {
     }
 
     private static func makeActionRules(
-        from actionRules: [SettingsStore.SpokenFormattingActionRule]
+        from actionRules: [SharedDictationPipeline.FormattingActionRule]
     ) -> [PhraseRule] {
         actionRules.flatMap { rule -> [PhraseRule] in
             guard rule.isEnabled, !rule.aliases.isEmpty else { return [] }
@@ -211,7 +192,7 @@ private enum SpokenPunctuationFormatter {
         }
     }
 
-    private static func spacing(for rule: SettingsStore.PunctuationDictionaryRule) -> Spacing {
+    private static func spacing(for rule: SharedDictationPipeline.PunctuationRule) -> Spacing {
         let aliases = Set(rule.aliases)
 
         switch rule.symbol {

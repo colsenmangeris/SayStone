@@ -2314,8 +2314,20 @@ struct ContentView: View {
 
         if derivedCurrentProvider == "ollama",
            derivedSelectedModel == LocalPunctuationCleanup.model {
-            let cleaned = await LocalPunctuationCleanup.clean(inputText)
-            return AITextProcessingResult(text: cleaned, tokensPerSecond: nil, fluidIntelligenceLatencyMilliseconds: nil)
+            let cleanup = await SharedDictationPipeline.applyGuardedLocalCleanup(
+                inputText,
+                selection: SharedDictationPipeline.LocalCleanupSelection(
+                    isSelected: true,
+                    providerKey: derivedCurrentProvider,
+                    model: derivedSelectedModel
+                ),
+                cleaner: { text in await LocalPunctuationCleanup.generateCandidate(text) }
+            )
+            return AITextProcessingResult(
+                text: cleanup.text,
+                tokensPerSecond: nil,
+                fluidIntelligenceLatencyMilliseconds: nil
+            )
         }
 
         let isDictationCall = overrideSystemPrompt != nil || dictationSlot != nil

@@ -46,6 +46,8 @@ private struct HealthController: LocalAPIRouteHandler {
     struct Body: Encodable {
         let status: String
         let version: String
+        let engineIdentity: EngineIdentity
+        let engineReadiness: EngineIdentity.Readiness
     }
 
     func handle(_ request: LocalAPI.Request) async -> LocalAPI.Response {
@@ -54,6 +56,14 @@ private struct HealthController: LocalAPIRouteHandler {
         }
 
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
-        return LocalAPI.json(Body(status: "ok", version: version))
+        let engineIdentity = EngineIdentityReader.current()
+        return LocalAPI.json(
+            Body(
+                status: "ok",
+                version: version,
+                engineIdentity: engineIdentity,
+                engineReadiness: engineIdentity.readiness
+            )
+        )
     }
 }

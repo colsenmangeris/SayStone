@@ -17,6 +17,7 @@ final class InferenceAPIController: LocalAPIRouteHandler {
         let confidence: Float
         let sampleCount: Int
         let provider: String
+        let engineIdentity: EngineIdentity
     }
 
     struct PostprocessResponse: Encodable {
@@ -67,7 +68,8 @@ final class InferenceAPIController: LocalAPIRouteHandler {
                 text: apiResult.result.text,
                 confidence: apiResult.result.confidence,
                 sampleCount: apiResult.sampleCount,
-                provider: SettingsStore.shared.selectedSpeechModel.displayName
+                provider: SettingsStore.shared.selectedSpeechModel.displayName,
+                engineIdentity: EngineIdentityReader.current()
             )
         )
     }

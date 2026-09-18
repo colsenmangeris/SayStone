@@ -225,6 +225,26 @@ final class DictationPostProcessingService {
             throw AIProcessingError.noVerifiedProvider
         }
 
+        // The guarded local punctuation cleanup is the same deterministic path
+        // desktop dictation uses. It must not fall through to the LLM client.
+        if resolved.providerKey == "ollama", resolved.model == LocalPunctuationCleanup.model {
+            let options = ASRService.sharedDictationPipelineOptions()
+            let cleanup = await SharedDictationPipeline.applyGuardedLocalCleanup(
+                trimmed,
+                selection: SharedDictationPipeline.LocalCleanupSelection(
+                    isSelected: true,
+                    providerKey: resolved.providerKey,
+                    model: resolved.model
+                ),
+                cleaner: { text in await LocalPunctuationCleanup.generateCandidate(text) }
+            )
+            return Result(
+                text: SharedDictationPipeline.applyGAAVFormatting(cleanup.text, options: options.gaav),
+                providerID: resolved.providerID,
+                model: resolved.model
+            )
+        }
+
         if allowsPrivateAIRoute,
            resolved.usesPrivateAI || PrivateAIIntegrationService.shouldHandleDictation(model: resolved.model)
         {

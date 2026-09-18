@@ -20,69 +20,7 @@ struct DictationLiteralOutputPlan: Equatable {
     }
 }
 
-extension ASRService {
-    static func applyDictationLiteralFormatting(
-        _ text: String,
-        appName: String? = nil,
-        bundleID: String? = nil,
-        windowTitle: String? = nil
-    ) -> String {
-        DictationLiteralFormatter.applyDictationLiteralFormatting(
-            text,
-            appName: appName,
-            bundleID: bundleID,
-            windowTitle: windowTitle
-        )
-    }
-
-    static func applySlashCommandFormatting(_ text: String) -> String {
-        DictationLiteralFormatter.applySlashCommandFormatting(text)
-    }
-
-    static func applyMentionFormatting(
-        _ text: String,
-        appName: String? = nil,
-        bundleID: String? = nil,
-        windowTitle: String? = nil
-    ) -> String {
-        DictationLiteralFormatter.applyMentionFormatting(
-            text,
-            appName: appName,
-            bundleID: bundleID,
-            windowTitle: windowTitle
-        )
-    }
-
-    static func makeDictationLiteralOutputPlan(
-        for text: String,
-        appName: String? = nil,
-        bundleID: String? = nil,
-        windowTitle: String? = nil
-    ) -> DictationLiteralOutputPlan {
-        DictationLiteralFormatter.makeOutputPlan(
-            for: text,
-            appName: appName,
-            bundleID: bundleID,
-            windowTitle: windowTitle
-        )
-    }
-
-    static func applyTerminalLiteralAutocompleteSpacing(
-        _ text: String,
-        appName: String? = nil,
-        bundleID: String? = nil,
-        windowTitle: String? = nil
-    ) -> String {
-        DictationLiteralFormatter.applyTerminalLiteralAutocompleteSpacing(
-            text,
-            appName: appName,
-            bundleID: bundleID,
-            windowTitle: windowTitle
-        )
-    }
-}
-
-private enum DictationLiteralFormatter {
+enum DictationLiteralFormatter {
     private enum SlashCommandMatchKind {
         case literal
         case spoken
@@ -152,23 +90,25 @@ private enum DictationLiteralFormatter {
 
     static func applyDictationLiteralFormatting(
         _ text: String,
+        enabled: Bool,
         appName: String? = nil,
         bundleID: String? = nil,
         windowTitle: String? = nil
     ) -> String {
-        guard SettingsStore.shared.literalDictationFormattingEnabled else { return text }
+        guard enabled else { return text }
 
-        let commandFormatted = self.applySlashCommandFormatting(text)
+        let commandFormatted = self.applySlashCommandFormatting(text, enabled: enabled)
         return self.applyMentionFormatting(
             commandFormatted,
+            enabled: enabled,
             appName: appName,
             bundleID: bundleID,
             windowTitle: windowTitle
         )
     }
 
-    static func applySlashCommandFormatting(_ text: String) -> String {
-        guard SettingsStore.shared.literalDictationFormattingEnabled else { return text }
+    static func applySlashCommandFormatting(_ text: String, enabled: Bool) -> String {
+        guard enabled else { return text }
         guard !text.isEmpty,
               text.contains("/") || text.range(of: "slash", options: .caseInsensitive) != nil
         else {
@@ -189,11 +129,12 @@ private enum DictationLiteralFormatter {
 
     static func applyMentionFormatting(
         _ text: String,
+        enabled: Bool,
         appName: String? = nil,
         bundleID: String? = nil,
         windowTitle: String? = nil
     ) -> String {
-        guard SettingsStore.shared.literalDictationFormattingEnabled else { return text }
+        guard enabled else { return text }
         guard !text.isEmpty,
               text.range(of: "at ", options: .caseInsensitive) != nil ||
               text.range(of: "tag ", options: .caseInsensitive) != nil ||
@@ -219,6 +160,7 @@ private enum DictationLiteralFormatter {
 
     static func makeOutputPlan(
         for text: String,
+        enabled: Bool,
         appName: String? = nil,
         bundleID: String? = nil,
         windowTitle: String? = nil
@@ -226,6 +168,7 @@ private enum DictationLiteralFormatter {
         .plain(
             self.applyTerminalLiteralAutocompleteSpacing(
                 text,
+                enabled: enabled,
                 appName: appName,
                 bundleID: bundleID,
                 windowTitle: windowTitle
@@ -235,11 +178,12 @@ private enum DictationLiteralFormatter {
 
     static func applyTerminalLiteralAutocompleteSpacing(
         _ text: String,
+        enabled: Bool,
         appName: String? = nil,
         bundleID: String? = nil,
         windowTitle: String? = nil
     ) -> String {
-        guard SettingsStore.shared.literalDictationFormattingEnabled else { return text }
+        guard enabled else { return text }
         guard text.last?.isHorizontalWhitespace == true else { return text }
 
         let withoutTrailingWhitespace = self.removingTrailingHorizontalWhitespace(from: text)

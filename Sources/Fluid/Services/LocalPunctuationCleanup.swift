@@ -2,6 +2,8 @@ import Foundation
 
 nonisolated enum LocalPunctuationCleanup {
     static let model = "saystone-punctuation:latest"
+    /// Bound both context/output size and latency. Long dictation is preserved.
+    static let maximumCleanupCharacterCount = 4000
     // Use the fine-tuned model's expected prompt; the validator narrows accepted
     // output to the punctuation/capitalization trial.
     static let prompt = """
@@ -40,8 +42,17 @@ nonisolated enum LocalPunctuationCleanup {
     }
 
     static func clean(_ text: String) async -> String {
-        // Bound both context/output size and latency. Long dictation is preserved.
-        guard !text.isEmpty, text.count <= 4000 else { return text }
+        guard !text.isEmpty, text.count <= self.maximumCleanupCharacterCount else { return text }
+        guard let candidate = await self.generateCandidate(text) else { return text }
+        guard self.accepts(original: text, candidate: candidate) else { return text }
+        return candidate
+    }
+
+    /// Requests one raw candidate from the local cleanup model.
+    ///
+    /// Returns `nil` when the request fails, times out, or the model does not
+    /// finish cleanly. The caller remains responsible for the `accepts` guard.
+    static func generateCandidate(_ text: String) async -> String? {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 1.5
         config.timeoutIntervalForResource = 1.5
@@ -59,17 +70,16 @@ nonisolated enum LocalPunctuationCleanup {
             ])
             let (data, response) = try await session.data(for: request)
             try Task.checkCancellation()
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return text }
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
             struct Response: Decodable {
                 struct Message: Decodable { let content: String }
                 let message: Message
                 let done_reason: String?
             }
             let result = try JSONDecoder().decode(Response.self, from: data)
-            let output = result.message.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard result.done_reason == "stop", accepts(original: text, candidate: output) else { return text }
-            return output
-        } catch { return text }
+            guard result.done_reason == "stop" else { return nil }
+            return result.message.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch { return nil }
     }
     private final class NoRedirect: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
         func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
