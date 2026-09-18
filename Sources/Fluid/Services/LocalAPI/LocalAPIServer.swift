@@ -146,7 +146,7 @@ private final class LocalAPIConnectionHandler {
                 }
 
                 guard self.buffer.count <= LocalAPI.maxRequestBytes else {
-                    self.send(LocalAPI.error("Request too large.", status: 413))
+                    self.send(LocalAPI.error("Request too large.", code: "payload_too_large", status: 413))
                     return
                 }
 
@@ -223,13 +223,15 @@ private final class LocalAPIConnectionHandler {
             headers[key] = value
         }
 
+        let parsedTarget = Self.parseTarget(parts[1])
+
         let contentLength: Int
         if let rawContentLength = headers["content-length"] {
             guard let parsedContentLength = Int(rawContentLength), parsedContentLength >= 0 else {
                 return .failure(LocalAPI.error("Invalid Content-Length.", status: 400))
             }
-            guard parsedContentLength <= LocalAPI.maxRequestBytes else {
-                return .failure(LocalAPI.error("Request too large.", status: 413))
+            guard parsedContentLength <= LocalAPI.bodyLimit(forPath: parsedTarget.path) else {
+                return .failure(LocalAPI.error("Request too large.", code: "payload_too_large", status: 413))
             }
             contentLength = parsedContentLength
         } else {
@@ -239,14 +241,13 @@ private final class LocalAPIConnectionHandler {
         let bodyStart = headerEnd.upperBound
         let requestEnd = bodyStart + contentLength
         guard requestEnd <= LocalAPI.maxRequestBytes else {
-            return .failure(LocalAPI.error("Request too large.", status: 413))
+            return .failure(LocalAPI.error("Request too large.", code: "payload_too_large", status: 413))
         }
         guard self.buffer.count >= requestEnd else {
             return .incomplete
         }
 
         let body = Data(self.buffer[bodyStart..<requestEnd])
-        let parsedTarget = Self.parseTarget(parts[1])
         return .request(LocalAPI.Request(
             method: parts[0].uppercased(),
             path: parsedTarget.path,
@@ -278,6 +279,7 @@ private final class LocalAPIConnectionHandler {
         case 400: return "Bad Request"
         case 404: return "Not Found"
         case 405: return "Method Not Allowed"
+        case 409: return "Conflict"
         case 413: return "Payload Too Large"
         case 500: return "Internal Server Error"
         default: return "OK"

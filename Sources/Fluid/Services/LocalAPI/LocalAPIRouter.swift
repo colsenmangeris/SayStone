@@ -23,6 +23,9 @@ final class LocalAPIRouter {
         let inference = InferenceAPIController()
         self.register(method: "POST", path: "/v1/transcribe", handler: inference)
         self.register(method: "POST", path: "/v1/postprocess", handler: inference)
+
+        let dictation = DictationAPIController()
+        self.register(method: "POST", path: "/v1/dictate", handler: dictation)
     }
 
     func register(method: String, path: String, handler: LocalAPIRouteHandler) {

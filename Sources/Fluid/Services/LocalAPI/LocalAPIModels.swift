@@ -4,6 +4,17 @@ enum LocalAPI {
     static let defaultPort: UInt16 = 47_733
     static let maxRequestBytes = 500 * 1024 * 1024
 
+    /// Conservative per-route cap for `POST /v1/dictate`.
+    ///
+    /// 16 MiB is roughly nine minutes of 16 kHz mono 16-bit PCM — far longer
+    /// than a phone dictation clip and far below the 500 MiB generic limit.
+    static let dictateMaxRequestBytes = 16 * 1024 * 1024
+
+    /// Body-size limit for a route. Unknown routes keep the generic cap.
+    static func bodyLimit(forPath path: String) -> Int {
+        path == "/v1/dictate" ? self.dictateMaxRequestBytes : self.maxRequestBytes
+    }
+
     struct Configuration {
         let enabled: Bool
         let port: UInt16
@@ -47,6 +58,11 @@ enum LocalAPI {
         let error: String
     }
 
+    struct CodedErrorBody: Encodable {
+        let code: String
+        let error: String
+    }
+
     static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -79,6 +95,18 @@ enum LocalAPI {
 
     static func error(_ message: String, status: Int) -> Response {
         let body = (try? Self.encoder.encode(ErrorBody(error: message))) ?? Data()
+        return Response(
+            status: status,
+            headers: ["Content-Type": "application/json; charset=utf-8"],
+            body: body
+        )
+    }
+
+    /// Error response with a stable machine-readable ``code`` alongside the
+    /// human message. Used where clients branch on the failure kind, such as
+    /// the route-specific size cap.
+    static func error(_ message: String, code: String, status: Int) -> Response {
+        let body = (try? Self.encoder.encode(CodedErrorBody(code: code, error: message))) ?? Data()
         return Response(
             status: status,
             headers: ["Content-Type": "application/json; charset=utf-8"],
