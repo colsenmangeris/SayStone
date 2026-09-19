@@ -102,6 +102,35 @@ final class KeychainService {
         try self.saveStoredKeys(values)
     }
 
+    /// Imports a credential from a private, one-time file using SayStone's own
+    /// Keychain identity, then removes the plaintext source. This is used by
+    /// headless installs where an SSH process cannot update an app-owned
+    /// Keychain item without an interactive macOS prompt.
+    func importKeyIfPresent(
+        from fileURL: URL,
+        for providerID: String,
+        fileManager: FileManager = .default
+    ) throws -> Bool {
+        guard fileManager.fileExists(atPath: fileURL.path) else { return false }
+
+        let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+              (attributes[.ownerAccountID] as? NSNumber)?.uint32Value == getuid(),
+              let permissions = attributes[.posixPermissions] as? NSNumber,
+              permissions.uint16Value & 0o077 == 0
+        else {
+            throw KeychainServiceError.invalidData
+        }
+
+        let credential = try String(contentsOf: fileURL, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !credential.isEmpty else { throw KeychainServiceError.invalidData }
+
+        try self.storeKey(credential, for: providerID)
+        try fileManager.removeItem(at: fileURL)
+        return true
+    }
+
     func legacyProviderEntries() throws -> [String: String] {
         self.ioLock.lock()
         defer { self.ioLock.unlock() }

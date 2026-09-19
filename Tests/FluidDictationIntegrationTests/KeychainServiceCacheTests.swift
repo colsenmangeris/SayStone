@@ -10,6 +10,47 @@ private final class KeychainServiceBox: @unchecked Sendable {
 }
 
 final class KeychainServiceCacheTests: XCTestCase {
+    func testOneTimeImportStoresCredentialAndDeletesPrivateFile() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let importURL = directory.appendingPathComponent("credential.import")
+        try Data("  speech-token\n".utf8).write(to: importURL, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: importURL.path)
+
+        var stored: [String: String] = [:]
+        let service = KeychainService(
+            testingLoad: { stored },
+            testingSave: { stored = $0 }
+        )
+
+        XCTAssertTrue(try service.importKeyIfPresent(from: importURL, for: "saystone-profile-sync"))
+        XCTAssertEqual(stored["saystone-profile-sync"], "speech-token")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: importURL.path))
+        XCTAssertFalse(try service.importKeyIfPresent(from: importURL, for: "saystone-profile-sync"))
+    }
+
+    func testOneTimeImportRejectsBroadFilePermissions() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let importURL = directory.appendingPathComponent("credential.import")
+        try Data("speech-token".utf8).write(to: importURL, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: importURL.path)
+
+        let service = KeychainService(testingLoad: { [:] }, testingSave: { _ in })
+        XCTAssertThrowsError(
+            try service.importKeyIfPresent(from: importURL, for: "saystone-profile-sync")
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: importURL.path))
+    }
+
     func testConcurrentStoresDoNotLoseUpdates() throws {
         let storageLock = NSLock()
         var storage: [String: String] = [:]

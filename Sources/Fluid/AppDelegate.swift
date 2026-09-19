@@ -43,7 +43,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Initialize app settings (dock visibility, etc.)
         SettingsStore.shared.initializeAppSettings()
         LocalAPIServer.shared.start()
-        Task { await SayStoneSpeechProfileSyncService.shared.start() }
+        DispatchQueue.global(qos: .utility).async {
+            self.importSpeechProfileCredentialIfPresent()
+            Task { await SayStoneSpeechProfileSyncService.shared.start() }
+        }
 
         // Record first-open synchronously before async analytics bootstrap so
         // onboarding initialization is deterministic on brand-new installs.
@@ -63,6 +66,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         // Note: App UI is designed with dark color scheme in mind
         // All gradients and effects are optimized for dark mode
+    }
+
+    private func importSpeechProfileCredentialIfPresent() {
+        let baseURL = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support")
+        let importURL = baseURL
+            .appendingPathComponent("FluidVoice", isDirectory: true)
+            .appendingPathComponent("saystone-profile-sync-token.import")
+
+        do {
+            let imported = try KeychainService.shared.importKeyIfPresent(
+                from: importURL,
+                for: SayStoneSpeechProfileSyncService.tokenKeychainID
+            )
+            if imported {
+                DebugLogger.shared.info(
+                    "Imported the SayStone profile credential into Keychain",
+                    source: "AppDelegate"
+                )
+            }
+        } catch {
+            DebugLogger.shared.error(
+                "Could not import the SayStone profile credential: \(error.localizedDescription)",
+                source: "AppDelegate"
+            )
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
