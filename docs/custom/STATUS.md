@@ -1,5 +1,7 @@
 # SayStone
 
+> Current cross-repository authority: [HANDOFF-2026-09-22-SHARED-SPEECH.md](./HANDOFF-2026-09-22-SHARED-SPEECH.md). It supersedes historical pending/current-state language below while preserving this file as chronology.
+
 ## Scope
 Preserve existing appearance, providers, model choices and logos. Build a permissively licensed enhancement layer. Keep Parakeet as the quality reference. Do not modify Forge or interrupt ChatGPT work during this stage.
 
