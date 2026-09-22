@@ -11,7 +11,7 @@ SayStone source authority for this project:
 
 - worktree: `/Users/colsenmangeris/FluidVoice-worktrees/shared-speech`
 - branch: `feat/shared-speech-server`
-- pushed tip: `062deae4ac07ea6f802b3b72156916a291429b7d`
+- implementation revision: `062deae4ac07ea6f802b3b72156916a291429b7d` (the branch `HEAD` also includes this documentation pointer)
 - installed build on both Macs: `1.6.10 (22)`
 - bundle ID: `com.FluidApp.app.debug`
 - local speech endpoint: `127.0.0.1:47733`
