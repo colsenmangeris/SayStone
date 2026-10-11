@@ -7,6 +7,8 @@
 #   ./build.sh                    # signed public OSS build
 #   ./build.sh public             # signed public OSS build
 #   ./build.sh unsigned           # unsigned public OSS build (CI/fallback)
+#   ./build.sh development        # signed, isolated development build
+#   ./build.sh development-unsigned # isolated development build without signing
 #   ./build.sh fi                 # private FI build
 
 set -euo pipefail
@@ -35,12 +37,14 @@ resolve_development_team() {
 
 run_public_build() {
     local signing_mode="$1"
+    local configuration="${2:-Debug}"
+    local product_name="${3:-SayStone}"
     local development_team
     local engine_xcconfig="${DERIVED_DATA_PATH}/SayStoneEngineManifest.xcconfig"
     local -a build_args=(
         -project SayStone.xcodeproj
         -scheme SayStone
-        -configuration Debug
+        -configuration "${configuration}"
         -destination 'platform=macOS'
         -derivedDataPath "${DERIVED_DATA_PATH}"
         -xcconfig "${engine_xcconfig}"
@@ -60,13 +64,15 @@ run_public_build() {
     if [ "${SAYSTONE_REQUIRE_ENGINE_MANIFEST:-0}" = "1" ]; then
         manifest_args+=( --require-model )
     fi
-    if [ -n "${SAYSTONE_MODEL_DIRECTORY:-}" ]; then
+    if [ "${configuration}" = "Development" ]; then
+        manifest_args+=( --model-directory "${HOME}/Library/Application Support/SayStone Development/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v2-coreml" )
+    elif [ -n "${SAYSTONE_MODEL_DIRECTORY:-}" ]; then
         manifest_args+=( --model-directory "${SAYSTONE_MODEL_DIRECTORY}" )
     fi
     python3 "${manifest_args[@]}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
-        echo "Running unsigned public SayStone build..."
+        echo "Running unsigned public SayStone ${configuration} build..."
         echo "Accessibility permission may need to be granted again after rebuilding."
         exec xcodebuild "${build_args[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     fi
@@ -99,13 +105,13 @@ EOF
         exit 1
     fi
 
-    echo "Running signed public SayStone build..."
-    echo "Build product: ${DERIVED_DATA_PATH}/Build/Products/Debug/SayStone.app"
+    echo "Running signed public SayStone ${configuration} build..."
+    echo "Build product: ${DERIVED_DATA_PATH}/Build/Products/${configuration}/${product_name}.app"
     xcodebuild "${build_args[@]}" DEVELOPMENT_TEAM="${development_team}"
 
     # The upstream binary framework needs macOS versioned-framework symlinks
     # before strict bundle verification. Repair only this generated product.
-    local app_path="${DERIVED_DATA_PATH}/Build/Products/Debug/SayStone.app"
+    local app_path="${DERIVED_DATA_PATH}/Build/Products/${configuration}/${product_name}.app"
     local signing_identity signing_authority
     signing_authority="$(codesign --display --verbose=2 "${app_path}" 2>&1 \
         | awk '/^Authority=/ { if (!authority) authority = substr($0, 11) } END { print authority }')"
@@ -128,6 +134,12 @@ case "${PROFILE}" in
     unsigned|ci)
         run_public_build unsigned
         ;;
+    development)
+        run_public_build signed Development "SayStone Development"
+        ;;
+    development-unsigned)
+        run_public_build unsigned Development "SayStone Development"
+        ;;
     fi|private|dev|full)
         if [ ! -x "${PRIVATE_FI_BUILD_SCRIPT}" ]; then
             echo "Private Fluid Intelligence build script is missing:"
@@ -139,7 +151,7 @@ case "${PROFILE}" in
         ;;
     *)
         echo "Unknown build profile: ${PROFILE}"
-        echo "Valid profiles: public/oss/incremental/fast, unsigned/ci, fi/private/dev/full"
+        echo "Valid profiles: public/oss/incremental/fast, unsigned/ci, development, development-unsigned, fi/private/dev/full"
         exit 1
         ;;
 esac

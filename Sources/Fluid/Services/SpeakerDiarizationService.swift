@@ -41,7 +41,12 @@ actor SpeakerDiarizationService {
                 "SpeakerDiarizationService: preparing diarizer models",
                 source: "SpeakerDiarizationService"
             )
-            try await self.manager.prepareModels()
+            try await self.manager.prepareModels(
+                directory: AppStorage.isDevelopment
+                    ? AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent("FluidAudio/Models", isDirectory: true)
+                    : nil
+            )
             self.modelsReady = true
         }
 

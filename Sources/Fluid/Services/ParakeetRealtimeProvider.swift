@@ -246,11 +246,8 @@ final class ParakeetRealtimeProvider: TranscriptionProvider {
 
     private static func cacheRootDirectory() -> URL {
         let baseDirectory =
-            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(
-                    "Library/Application Support",
-                    isDirectory: true
-                )
+            AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? AppStorage.applicationSupportFallback
 
         return baseDirectory
             .appendingPathComponent("FluidAudio", isDirectory: true)

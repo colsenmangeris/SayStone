@@ -512,7 +512,7 @@ private actor AnalyticsCore {
     }
 
     private func databaseURL() throws -> URL {
-        let applicationSupport = try FileManager.default.url(
+        let applicationSupport = try AppStorage.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,
             appropriateFor: nil,

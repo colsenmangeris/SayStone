@@ -24,7 +24,7 @@ final nonisolated class FileLogger: @unchecked Sendable {
     private static let sigUnknownLine = Array("[CRASH] Fatal signal UNKNOWN\n".utf8)
 
     private init() {
-        let baseDirectory = self.fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+        let baseDirectory = AppStorage.urls(for: .libraryDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSTemporaryDirectory())
         self.logDirectory = baseDirectory.appendingPathComponent("Logs/Fluid", isDirectory: true)
         self.logFileURL = self.logDirectory.appendingPathComponent("Fluid.log", isDirectory: false)
         self.backupLogURL = self.logDirectory.appendingPathComponent("Fluid.log.1", isDirectory: false)

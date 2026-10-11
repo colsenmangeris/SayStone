@@ -38,12 +38,14 @@ Do not select the older recovery checkout for this feature build.
 ## Xcode
 
 Open `SayStone.xcodeproj` from the current development checkout. Select scheme
-**SayStone** and destination **My Mac**. Run/Analyze use Debug; Profile/Archive
-use Release. The authoritative app build is Xcode, not `swift run`.
+**SayStone** and destination **My Mac**. Run, Test, Analyze and Profile use the
+isolated **Development** configuration, producing **SayStone Development.app**.
+Archive retains the public Release configuration. The authoritative app build
+is Xcode, not `swift run`.
 
 ```sh
 cd /Users/colsenmangeris/SayStone-worktrees/mac-workflows
-./build.sh
+./build.sh development
 ```
 
 First-time package approval: Xcode can ask to trust MLX's `CudaBuild` plugin.
@@ -52,14 +54,18 @@ no commands. For that reviewed dependency set, this existing per-build switch
 allows the CLI build to proceed:
 
 ```sh
-SAYSTONE_REVIEWED_PACKAGE_PLUGINS=1 ./build.sh
+SAYSTONE_REVIEWED_PACKAGE_PLUGINS=1 ./build.sh development
 ```
 
 This passes Xcode's package-validation skip flag for this invocation; it does
 not create persistent global trust. Re-review package plugins when pins change,
 or approve the specific plugin through Xcode's normal interface.
 
-Build output: `DerivedData/Build/Products/Debug/SayStone.app`.
+Development output:
+`DerivedData/Build/Products/Development/SayStone Development.app`.
+`./build.sh` and `./build.sh public` retain the public Debug build at
+`DerivedData/Build/Products/Debug/SayStone.app`; do not launch that build for
+routine development because it shares the daily app's identity and data.
 The build helper generates signed speech-engine metadata and uses an installed
 Apple Development certificate. Local team details remain outside the repository.
 The signed build helper repairs CTranscribe.framework and verifies the strict
@@ -68,21 +74,23 @@ existing helper is available:
 
 ```sh
 python3 scripts/local/repair-framework-bundle.py \
-  DerivedData/Build/Products/Debug/SayStone.app \
+  'DerivedData/Build/Products/Development/SayStone Development.app' \
   --identity '<exact installed certificate name or SHA-1>'
-codesign --verify --deep --strict DerivedData/Build/Products/Debug/SayStone.app
+codesign --verify --deep --strict 'DerivedData/Build/Products/Development/SayStone Development.app'
 ```
 
 A matching signing identity is necessary; use its specific certificate name
 when more than one development certificate is installed. Repair only generated
 build products. Do not copy over the daily installed app as part of setup.
 
-The shared scheme includes `FluidDictationIntegrationTests`. Tests launch the
-host application, so inspect their effects and establish isolated data before
-running them. Once that is prepared:
+The shared scheme includes `FluidDictationIntegrationTests`, using the
+Development host and its separate data. Tests launch the host application, so
+inspect their effects before running them. Compilation alone is available with
+`build-for-testing`. To execute authorized tests:
 
 ```sh
 xcodebuild test -project SayStone.xcodeproj -scheme SayStone \
+  -configuration Development \
   -destination 'platform=macOS'
 ```
 
@@ -132,11 +140,40 @@ not prerequisites for building this app. No new plugin or paid service was added
 ## Daily app boundary
 
 `~/Applications/SayStone.app` is the existing daily app (1.6.10, build 22).
-This project's Debug bundle ID remains `com.FluidApp.app.debug`; launching a
+The public Debug bundle ID remains `com.FluidApp.app.debug`; launching that
 build can share its preferences, storage, permissions and single-instance behavior.
-Setup builds without launching or replacing it. Plan separate development bundle
-identity and data isolation before interactive feature testing. Recognition,
-cleanup, clipboard and cross-device acceptance remain separate from compilation.
+Routine Xcode Run/Test actions now select the isolated Development configuration:
+
+| Boundary | Development location or identity |
+| --- | --- |
+| App name | `SayStone Development` |
+| Bundle ID / preferences domain | `com.architech.saystone.development` |
+| App-owned data root | `~/Library/Application Support/SayStone Development` |
+| History, audio, vocabulary, profile cache | `Application Support/FluidVoice/` under the development root |
+| Recognition recovery / Qwen model | `Application Support/SayStone/` under the development root |
+| FluidAudio models (ASR, CTC, VAD, diarizer) | `Application Support/FluidAudio/Models/` under the development root |
+| Whisper, Nemotron, external CoreML caches | `Caches/` under the development root |
+| Logs | `Library/Logs/Fluid/` under the development root |
+| Provider / profile token Keychain service | `com.architech.saystone.development.provider-api-keys` |
+
+Preferences use macOS's separate bundle domain in `~/Library/Preferences/`.
+Storage is selected by the `SAYSTONE_DEVELOPMENT` compilation condition, so it
+works when opening the generated app directly, without launch environment variables.
+The app checks its development bundle identity and prepares private data folders
+before initializing settings or services. Public Debug/Release paths, provider
+choices, storage keys and Keychain names retain their existing behavior.
+
+The development build starts with its own settings and history. It does not
+copy the daily app's data, credentials or models. Local models are downloaded
+into development storage when selected. Self-updates and rollback are blocked
+for Development to preserve its identity; rebuild it through Xcode or the helper.
+No daily app replacement install is part of this workflow. Recognition, cleanup,
+clipboard and cross-device acceptance remain separate from compilation.
+
+See [DEVELOPMENT-ISOLATION.md](DEVELOPMENT-ISOLATION.md) for validation evidence
+and standalone fixture checks. The system boundaries follow Apple's
+[preferences domains](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/UserDefaults/AboutPreferenceDomains/AboutPreferenceDomains.html)
+and [generic-password Keychain attributes](https://developer.apple.com/documentation/security/ksecclassgenericpassword).
 
 ## Validation
 

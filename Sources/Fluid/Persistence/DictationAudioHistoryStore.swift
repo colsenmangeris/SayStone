@@ -284,7 +284,7 @@ final nonisolated class DictationAudioHistoryStore: @unchecked Sendable {
     }
 
     private func audioDirectory(createIfNeeded: Bool = true) throws -> URL {
-        guard let base = self.fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        guard let base = AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             throw DictationAudioHistoryError.applicationSupportUnavailable
         }
         let directory = base

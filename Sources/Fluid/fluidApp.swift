@@ -11,13 +11,19 @@ import SwiftUI
 
 @main
 struct FluidApp: App {
-    @StateObject private var menuBarManager = MenuBarManager()
+    @StateObject private var menuBarManager: MenuBarManager
     @StateObject private var appServices: AppServices
-    @ObservedObject private var settings = SettingsStore.shared
+    @ObservedObject private var settings: SettingsStore
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     init() {
-        // Use the shared singleton instance
+        do {
+            try AppStorage.prepareDevelopmentStorage()
+        } catch {
+            fatalError("Could not prepare isolated development storage: \(error.localizedDescription)")
+        }
+        _settings = ObservedObject(wrappedValue: SettingsStore.shared)
+        _menuBarManager = StateObject(wrappedValue: MenuBarManager())
         _appServices = StateObject(wrappedValue: AppServices.shared)
     }
 

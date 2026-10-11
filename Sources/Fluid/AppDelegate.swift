@@ -56,10 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         AnalyticsService.shared.bootstrap()
 
         // Check for updates automatically if enabled (initial check on launch)
-        self.checkForUpdatesAutomatically()
-
-        // Schedule periodic update checks every hour while app is running
-        self.schedulePeriodicUpdateChecks()
+        if !AppStorage.isDevelopment {
+            self.checkForUpdatesAutomatically()
+            self.schedulePeriodicUpdateChecks()
+        }
 
         // Login Items can launch hidden; reveal the real SwiftUI window so ContentView startup runs.
         self.openMainWindowOnLaunch()
@@ -69,11 +69,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     private func importSpeechProfileCredentialIfPresent() {
-        let baseURL = FileManager.default.urls(
+        let baseURL = AppStorage.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first ?? FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support")
+        ).first ?? AppStorage.applicationSupportFallback
         let importURL = baseURL
             .appendingPathComponent("FluidVoice", isDirectory: true)
             .appendingPathComponent("saystone-profile-sync-token.import")

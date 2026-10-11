@@ -10,7 +10,7 @@ enum EngineIdentityReader {
     // The installed model is immutable for one app process. Hash it once so a
     // phone session does not pay to read the 443 MB artifact on every start.
     private static let installedV2ModelDigest: String? = {
-        guard let applicationSupport = FileManager.default.urls(
+        guard let applicationSupport = AppStorage.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first else { return nil }

@@ -90,7 +90,7 @@ final class ParakeetVocabularyStore {
     private init() {}
 
     func vocabularyFileURL() throws -> URL {
-        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+        guard let base = AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             throw StoreError.applicationSupportUnavailable
         }
         let directory = base.appendingPathComponent(self.appSupportFolder, isDirectory: true)
@@ -347,12 +347,13 @@ extension ParakeetVocabularyStore {
             "ParakeetVocabularyStore: capped terms count=\(cappedTerms.count)",
             source: "ParakeetVocabularyStore"
         )
-        let ctcModels = try await CtcModels.downloadAndLoad(variant: .ctc110m)
+        let ctcDirectory = AppStorage.modelDirectory(CtcModels.defaultCacheDirectory(for: .ctc110m))
+        let ctcModels = try await CtcModels.downloadAndLoad(to: ctcDirectory, variant: .ctc110m)
         DebugLogger.shared.debug(
             "ParakeetVocabularyStore: ctc model loaded variant=\(ctcModels.variant)",
             source: "ParakeetVocabularyStore"
         )
-        let ctcTokenizer = try await CtcTokenizer.load(from: CtcModels.defaultCacheDirectory(for: ctcModels.variant))
+        let ctcTokenizer = try await CtcTokenizer.load(from: ctcDirectory)
 
         let tokenizedTerms: [CustomVocabularyTerm] = cappedTerms.compactMap { term in
             let tokens = ctcTokenizer.encode(term.text)

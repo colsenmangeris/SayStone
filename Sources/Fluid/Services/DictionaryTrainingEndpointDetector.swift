@@ -87,7 +87,13 @@ actor DictionaryTrainingEndpointDetector {
         }
 
         let task = Task<VadManager, Error> {
-            try await VadManager()
+            if AppStorage.isDevelopment {
+                return try await VadManager(
+                    modelDirectory: AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                        .appendingPathComponent("FluidAudio", isDirectory: true)
+                )
+            }
+            return try await VadManager()
         }
         self.managerTask = task
 

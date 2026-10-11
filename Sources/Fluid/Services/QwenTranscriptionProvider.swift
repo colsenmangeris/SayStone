@@ -7,8 +7,8 @@ import Qwen3ASR
 final class QwenTranscriptionProvider: TranscriptionProvider {
     static let modelID = "aufklarer/Qwen3-ASR-0.6B-MLX-4bit"
     static var cacheDirectory: URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/Application Support/SayStone/Models/Qwen3-ASR-0.6B-MLX-4bit")
+        AppStorage.applicationSupportFallback
+            .appendingPathComponent("SayStone/Models/Qwen3-ASR-0.6B-MLX-4bit")
     }
     static var cached: Bool {
         let files = ["config.json", "model.safetensors", "vocab.json", "merges.txt", "tokenizer_config.json"]

@@ -3,6 +3,7 @@ import Foundation
 import PromiseKit
 
 enum SimpleUpdateError: Error, LocalizedError {
+    case developmentBuild
     case invalidURL
     case invalidResponse
     case jsonDecoding
@@ -18,6 +19,7 @@ enum SimpleUpdateError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
+        case .developmentBuild: return "Build SayStone Development from Xcode to update it. Self-updates and rollback are disabled for this isolated build."
         case .invalidURL: return "Invalid URL."
         case .invalidResponse: return "Invalid HTTP response from GitHub."
         case .jsonDecoding: return "The data couldn’t be read because it isn’t in the correct format."
@@ -155,6 +157,7 @@ final class SimpleUpdater {
     }
 
     func rollbackToLatestBackup() async throws {
+        guard !AppStorage.isDevelopment else { throw SimpleUpdateError.developmentBuild }
         guard self.updateOperationGate.begin() else {
             throw SimpleUpdateError.updateAlreadyInProgress
         }
@@ -337,6 +340,7 @@ final class SimpleUpdater {
         repo: String,
         includePrerelease: Bool = false
     ) async throws {
+        guard !AppStorage.isDevelopment else { throw SimpleUpdateError.developmentBuild }
         guard self.updateOperationGate.begin() else {
             throw SimpleUpdateError.updateAlreadyInProgress
         }
@@ -602,7 +606,7 @@ final class SimpleUpdater {
     }
 
     private func rollbackRootDirectory() -> URL {
-        let base = self.fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        let base = AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         let support = base ?? URL(fileURLWithPath: NSTemporaryDirectory())
         return support
             .appendingPathComponent("Fluid", isDirectory: true)
@@ -852,6 +856,7 @@ final class SimpleUpdater {
     }
 
     private func performSwapAndRelaunch(installedAppURL: URL, downloadedAppURL: URL) throws {
+        guard !AppStorage.isDevelopment else { throw SimpleUpdateError.developmentBuild }
         // Handle app name changes: if the downloaded app has a different name,
         // we need to replace the old app and use the new name
         let installedAppName = installedAppURL.lastPathComponent

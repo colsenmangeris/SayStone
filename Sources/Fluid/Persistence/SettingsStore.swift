@@ -5245,7 +5245,7 @@ final class SettingsStore: ObservableObject {
                 default:
                     hint = "nemotron-3.5-asr-streaming320-int8-CoreML"
                 }
-                let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+                let directory = AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first?
                     .appendingPathComponent(hint, isDirectory: true)
                 #if arch(arm64)
                 return directory.map { NemotronProvider.artifactsAreComplete(at: $0) } ?? false
@@ -5255,7 +5255,7 @@ final class SettingsStore: ObservableObject {
             default:
                 // Whisper models
                 guard let whisperFile = self.whisperModelFile else { return false }
-                let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+                let directory = AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first?
                     .appendingPathComponent("WhisperModels")
                 let modelURL = directory?.appendingPathComponent(whisperFile)
                 guard
@@ -5272,7 +5272,7 @@ final class SettingsStore: ObservableObject {
 
         #if canImport(FluidAudio)
         private static func parakeetModelsExist(version: AsrModelVersion) -> Bool {
-            let directory = AsrModels.defaultCacheDirectory(for: version)
+            let directory = AppStorage.modelDirectory(AsrModels.defaultCacheDirectory(for: version))
             let vocabulary = directory.appendingPathComponent(ModelNames.ASR.vocabularyFile)
             guard
                 AsrModels.modelsExist(at: directory, version: version),
@@ -5290,7 +5290,7 @@ final class SettingsStore: ObservableObject {
         }
 
         private static func parakeetRealtimeModelsExist() -> Bool {
-            let modelsDirectory = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
+            let modelsDirectory = AppStorage.modelDirectory(AsrModels.defaultCacheDirectory()).deletingLastPathComponent()
             let modelDirectory = modelsDirectory
                 .appendingPathComponent("parakeet-eou-streaming", isDirectory: true)
                 .appendingPathComponent(Repo.parakeetEou160.folderName, isDirectory: true)
@@ -5948,7 +5948,7 @@ extension SettingsStore {
             return URL(fileURLWithPath: storedPath, isDirectory: true)
         }
 
-        let cachesDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+        let cachesDirectory = AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first
         let fallback = cachesDirectory?.appendingPathComponent(spec.artifactFolderHint, isDirectory: true)
         guard let fallback else { return nil }
         if FileManager.default.fileExists(atPath: fallback.path) {

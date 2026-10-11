@@ -70,7 +70,7 @@ final class NemotronProvider: TranscriptionProvider {
     }
 
     private var cacheDirectory: URL? {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+        AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first?
             .appendingPathComponent(self.folderHint, isDirectory: true)
     }
 

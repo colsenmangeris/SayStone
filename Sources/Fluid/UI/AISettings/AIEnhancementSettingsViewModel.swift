@@ -639,8 +639,8 @@ final class AIEnhancementSettingsViewModel: ObservableObject {
     }
 
     private func probeKeychainAccess() -> KeychainAccessCheckResult {
-        let service = "com.fluidvoice.provider-api-keys"
-        let account = "fluidApiKeys"
+        let service = AppStorage.providerKeychainService
+        let account = AppStorage.providerKeychainAccount
 
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

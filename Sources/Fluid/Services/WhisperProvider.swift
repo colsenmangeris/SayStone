@@ -75,7 +75,7 @@ final class WhisperProvider: TranscriptionProvider {
         if let overriddenModelDirectory {
             return overriddenModelDirectory
         }
-        guard let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+        guard let cacheDir = AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first else {
             preconditionFailure("Could not find caches directory")
         }
         return cacheDir.appendingPathComponent("WhisperModels")

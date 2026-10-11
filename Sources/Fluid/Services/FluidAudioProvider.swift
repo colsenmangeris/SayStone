@@ -60,8 +60,8 @@ final class FluidAudioProvider: TranscriptionProvider {
         let asrModelVersion: AsrModelVersion = selectedModel == .parakeetTDTv2 ? .v2 : .v3
         let modelVersion = selectedModel == .parakeetTDTv2 ? "v2" : "v3"
         self.pronunciationModelKey = "parakeet-\(modelVersion)"
-        let cacheDirectory = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
-        let modelCacheDirectory = AsrModels.defaultCacheDirectory(for: asrModelVersion)
+        let cacheDirectory = AppStorage.modelDirectory(AsrModels.defaultCacheDirectory()).deletingLastPathComponent()
+        let modelCacheDirectory = AppStorage.modelDirectory(AsrModels.defaultCacheDirectory(for: asrModelVersion))
         DebugLogger.shared.info(
             "FluidAudioProvider: Starting model preparation for \(selectedModel.displayName) [version=\(modelVersion)]",
             source: "FluidAudioProvider"
@@ -95,6 +95,7 @@ final class FluidAudioProvider: TranscriptionProvider {
         let models: AsrModels
         do {
             models = try await AsrModels.downloadAndLoad(
+                to: modelCacheDirectory,
                 version: asrModelVersion,
                 progressHandler: fluidAudioProgressHandler
             )
@@ -706,7 +707,7 @@ final class FluidAudioProvider: TranscriptionProvider {
 
     func clearCache() async throws {
         self.resetIncrementalSession()
-        let baseCacheDir = AsrModels.defaultCacheDirectory().deletingLastPathComponent()
+        let baseCacheDir = AppStorage.modelDirectory(AsrModels.defaultCacheDirectory()).deletingLastPathComponent()
         let selectedModel = self.modelOverride ?? SettingsStore.shared.selectedSpeechModel
         DebugLogger.shared.info(
             "FluidAudioProvider: clearCache called for \(selectedModel.displayName)",

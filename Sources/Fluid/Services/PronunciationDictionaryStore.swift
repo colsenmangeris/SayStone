@@ -39,8 +39,8 @@ actor PronunciationDictionaryStore {
     private var document: Document?
 
     init(fileManager: FileManager = .default) {
-        let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        let baseURL = AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask, fileManager: fileManager).first
+            ?? AppStorage.applicationSupportFallback
         let appURL = baseURL.appendingPathComponent("FluidVoice", isDirectory: true)
         self.fileURL = appURL.appendingPathComponent("pronunciation-dictionary-v1.json")
     }

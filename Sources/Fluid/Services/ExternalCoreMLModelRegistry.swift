@@ -95,7 +95,7 @@ struct ExternalCoreMLASRModelSpec {
     }
 
     var defaultCacheDirectory: URL? {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
+        AppStorage.urls(for: .cachesDirectory, in: .userDomainMask).first?
             .appendingPathComponent(self.artifactFolderHint, isDirectory: true)
     }
 

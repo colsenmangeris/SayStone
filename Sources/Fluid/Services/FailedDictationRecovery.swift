@@ -3,7 +3,7 @@ import Foundation
 /// Keeps one recoverable recording when recognition fails. Never uploads it.
 nonisolated enum FailedDictationRecovery {
     static func save(samples: [Float], directory: URL? = nil) throws -> URL {
-        let folder = try directory ?? FileManager.default.url(
+        let folder = try directory ?? AppStorage.url(
             for: .applicationSupportDirectory, in: .userDomainMask,
             appropriateFor: nil, create: true
         ).appendingPathComponent("SayStone/Recovery", isDirectory: true)

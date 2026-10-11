@@ -327,7 +327,7 @@ private struct UnavailableAIIntegrationShim: PrivateAIIntegrationProviding {
     var selectedModel: PrivateAIRegisteredModel { PrivateAIModelRegistry.defaultModel }
     var configuredLocalModelPath: String? { nil }
     var modelDirectoryURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first?
             .appendingPathComponent("FluidVoice", isDirectory: true)
             .appendingPathComponent(PrivateAIProviderFeature.shared.modelDirectoryName, isDirectory: true)

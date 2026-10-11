@@ -63,8 +63,8 @@ actor SayStoneSpeechProfileSyncService {
         if let cacheURL {
             self.cacheURL = cacheURL
         } else {
-            let baseURL = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-                ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+            let baseURL = AppStorage.urls(for: .applicationSupportDirectory, in: .userDomainMask, fileManager: fileManager).first
+                ?? AppStorage.applicationSupportFallback
             self.cacheURL = baseURL
                 .appendingPathComponent("FluidVoice", isDirectory: true)
                 .appendingPathComponent("saystone-speech-profile-sync-v2.json")
