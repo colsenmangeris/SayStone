@@ -22,6 +22,7 @@ final class MacUtilityCoordinator: ObservableObject {
     private var isDispatching = false
     private var isIntentExecuting = false
     private let pasteboard: NSPasteboard
+    private var latestDictationText: String?
 
     init() {
         let root = DevelopmentRuntime.utilityDirectory
@@ -85,8 +86,28 @@ final class MacUtilityCoordinator: ObservableObject {
     }
 
     func latestTranscript() -> String? {
+        if let latestDictationText { return latestDictationText }
         if DevelopmentRuntime.isUITesting { return "Authored SayStone UI fixture." }
         return TranscriptionHistoryStore.shared.latestClipboardText
+    }
+
+    func recordDictationText(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        self.latestDictationText = text
+    }
+
+    func executeFromIntent(_ request: UtilityActionRequest) async throws -> UtilityActionResult {
+        try Task.checkCancellation()
+        guard !self.workflowRunner.state.isRunning, !self.isExecuting, !self.isDispatching,
+              !self.isIntentExecuting, self.pendingShortcutTask == nil else {
+            throw UtilityActionError.invalidInput("Another action or workflow is already running.")
+        }
+        guard ![.pastePlainText, .pasteText, .insertSnippet].contains(request.id) else {
+            throw UtilityActionError.invalidInput("Run paste actions from the palette or a configured shortcut, where a target field can be selected.")
+        }
+        self.isIntentExecuting = true
+        defer { self.isIntentExecuting = false }
+        return try await self.execute(request)
     }
 
     func execute(_ request: UtilityActionRequest) async throws -> UtilityActionResult {
@@ -238,6 +259,7 @@ final class MacUtilityCoordinator: ObservableObject {
 
     @discardableResult
     func runWorkflow(_ workflow: UtilityWorkflow, input: String, captureTarget: Bool = false) -> Bool {
+        guard !Task.isCancelled else { self.message = "Workflow cancelled before starting."; return false }
         guard !self.isExecuting, !self.isDispatching, !self.isIntentExecuting else { self.message = "Wait for the current action to finish."; return false }
         if captureTarget { self.target = TypingService.captureSystemFocusTarget() }
         let started = self.workflowRunner.start(
@@ -246,16 +268,27 @@ final class MacUtilityCoordinator: ObservableObject {
             latestTranscript: { self.latestTranscript() },
             executor: { try await self.execute($0) }
         )
-        self.message = started ? "Workflow started." : "A workflow is already running."
+        self.message = started ? "Workflow started." : self.workflowRunner.state.title
         self.selectedTab = "workflows"
         return started
     }
 
     func runVoiceWorkflowIfMatched(_ text: String, target: TypingService.CapturedFocusTarget?) -> Bool {
         guard let workflow = self.workflows.matchingVoicePhrase(text) else { return false }
-        guard !self.workflowRunner.state.isRunning, !self.isExecuting, !self.isDispatching, !self.isIntentExecuting else { return false }
+        // Keep the previous ordinary transcript available after ContentView
+        // records this recognized trigger in history, including after restart.
+        if self.latestDictationText == nil { self.latestDictationText = self.latestTranscript() }
+        guard !Task.isCancelled else {
+            self.message = "Voice workflow cancelled. Raw dictation is available in SayStone."
+            return true
+        }
+        guard !self.workflowRunner.state.isRunning, !self.isExecuting, !self.isDispatching, !self.isIntentExecuting, self.pendingShortcutTask == nil else {
+            self.message = "Voice workflow could not start. Raw dictation is available in SayStone."
+            self.show(tab: "workflows", captureTarget: false)
+            return true
+        }
         self.target = target
-        guard self.runWorkflow(workflow, input: "") else { return false }
+        self.runWorkflow(workflow, input: "")
         self.show(tab: "workflows", captureTarget: false)
         return true
     }
@@ -264,13 +297,17 @@ final class MacUtilityCoordinator: ObservableObject {
     /// text without replaying paste or other effects from completed steps.
     func runDictationWorkflowIfSelected(_ text: String, target: TypingService.CapturedFocusTarget?) async -> Bool {
         guard let workflow = self.workflows.dictationWorkflow() else { return false }
+        guard !Task.isCancelled else {
+            self.message = "Dictation workflow cancelled. Raw dictation is available in SayStone."
+            return true
+        }
         guard !self.workflowRunner.state.isRunning, !self.isExecuting, !self.isDispatching, !self.isIntentExecuting, self.pendingShortcutTask == nil else {
             self.message = "Dictation workflow could not start. Raw dictation is available in SayStone."
             self.show(tab: "workflows", captureTarget: false)
             return true
         }
         self.target = target
-        guard self.runWorkflow(workflow, input: text) else { return true }
+        guard self.runWorkflow(workflow, input: text), let runIdentifier = self.workflowRunner.runIdentifier else { return true }
         self.isIntentExecuting = true
         defer { self.isIntentExecuting = false }
         await withTaskCancellationHandler {
@@ -285,17 +322,18 @@ final class MacUtilityCoordinator: ObservableObject {
                     self.message = "\(self.workflowRunner.state.title). Raw dictation is available in SayStone."
                 }
             } catch {
-                self.workflowRunner.cancel()
+                self.workflowRunner.cancel(runIdentifier: runIdentifier)
                 self.message = "Dictation workflow cancelled. Raw dictation is available in SayStone."
             }
         } onCancel: {
-            Task { @MainActor in self.workflowRunner.cancel() }
+            Task { @MainActor in self.workflowRunner.cancel(runIdentifier: runIdentifier) }
         }
         self.show(tab: "workflows", captureTarget: false)
         return true
     }
 
     func runWorkflowFromIntent(id: UUID, input: String) async throws -> String {
+        try Task.checkCancellation()
         guard let workflow = self.workflows.workflows.first(where: { $0.id == id }) else {
             throw UtilityActionError.invalidInput("This workflow is no longer available.")
         }
@@ -306,7 +344,9 @@ final class MacUtilityCoordinator: ObservableObject {
             throw UtilityActionError.invalidInput("Run workflows with paste steps from the palette or a configured shortcut, where a target field can be selected.")
         }
         self.target = nil
-        guard self.runWorkflow(workflow, input: input) else { throw UtilityActionError.invalidInput(self.workflowRunner.state.title) }
+        guard self.runWorkflow(workflow, input: input), let runIdentifier = self.workflowRunner.runIdentifier else {
+            throw UtilityActionError.invalidInput(self.workflowRunner.state.title)
+        }
         self.isIntentExecuting = true
         defer { self.isIntentExecuting = false }
         return try await withTaskCancellationHandler {
@@ -319,7 +359,7 @@ final class MacUtilityCoordinator: ObservableObject {
             }
             return self.workflowRunner.output ?? ""
         } onCancel: {
-            Task { @MainActor in self.workflowRunner.cancel() }
+            Task { @MainActor in self.workflowRunner.cancel(runIdentifier: runIdentifier) }
         }
     }
 

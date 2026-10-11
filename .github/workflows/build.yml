@@ -204,6 +204,7 @@ jobs:
           -parallel-testing-enabled NO \
           -resultBundlePath CIResults/SayStoneDevelopmentTests.xcresult \
           -only-testing:FluidDictationIntegrationTests/TypingServiceTransientPasteboardTests \
+          -only-testing:FluidDictationIntegrationTests/MacUtilityCoordinatorTests \
           -only-testing:FluidDictationIntegrationTests/SettingsNavigationStateTests \
           -only-testing:FluidDictationIntegrationTests/TemperatureSupportTests \
           -only-testing:FluidDictationIntegrationTests/SupportedFileExtensionsTests \

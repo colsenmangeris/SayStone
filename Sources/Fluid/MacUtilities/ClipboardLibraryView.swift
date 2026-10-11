@@ -130,6 +130,11 @@ struct ClipboardLibraryView: View {
             .accessibilityIdentifier("clipboard.historyEnabled")
             Text("Off by default. After enabling, newly copied text is saved locally. Concealed, transient and generated items are skipped. Unmarked sensitive text may be saved; add apps to the exclusions below.")
                 .font(theme.typography.caption).foregroundStyle(theme.palette.secondaryText)
+            if library.isHistoryCollectionPaused {
+                Text("History collection is paused until a library save succeeds.")
+                    .font(theme.typography.caption).foregroundStyle(theme.palette.warning)
+                    .accessibilityIdentifier("clipboard.historyPaused")
+            }
             HStack {
                 Picker("Keep for", selection: optionBinding(\.retentionDays)) {
                     ForEach([1, 3, 7, 14, 30], id: \.self) { Text("\($0) \($0 == 1 ? "day" : "days")").tag($0) }
@@ -190,7 +195,7 @@ struct ClipboardLibraryView: View {
     private var exclusionsContent: some View {
         DisclosureGroup("Excluded apps (\(library.options.excludedBundleIdentifiers.count))") {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Enter an app's bundle identifier, for example com.example.Editor. Exclusions use available clipboard source markers and the foreground app. Adding an exclusion removes matching stored entries.")
+                Text("Enter an app's bundle identifier, for example com.example.Editor. Exclusions use available clipboard source markers and the foreground app. Adding an exclusion removes matching stored entries. Up to 200 apps can be excluded.")
                     .font(theme.typography.caption).foregroundStyle(theme.palette.secondaryText)
                 HStack {
                     TextField("App bundle identifier", text: $excludedAppDraft)
@@ -199,10 +204,10 @@ struct ClipboardLibraryView: View {
                     Button("Add") {
                         var options = library.options
                         options.excludedBundleIdentifiers.insert(excludedAppDraft.trimmingCharacters(in: .whitespacesAndNewlines))
-                        library.updateOptions(options)
-                        excludedAppDraft = ""
+                        if library.updateOptions(options) { excludedAppDraft = "" }
                     }
-                    .disabled(!ClipboardLibrary.isValidBundleIdentifier(excludedAppDraft.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    .disabled(!ClipboardLibrary.isValidBundleIdentifier(excludedAppDraft.trimmingCharacters(in: .whitespacesAndNewlines)) ||
+                        library.options.excludedBundleIdentifiers.count >= ClipboardLibrary.maximumExcludedAppCount)
                     .accessibilityIdentifier("clipboard.addExclusion")
                 }
                 ScrollView {
@@ -330,6 +335,10 @@ private struct ClipboardSnippetEditor: View {
                 Text("\(text.count)/\(ClipboardLibrary.maximumSnippetCharacters)")
                     .font(theme.typography.caption).foregroundStyle(theme.palette.secondaryText)
             }
+            if text.utf8.count > ClipboardLibrary.maximumSnippetBytes || title.utf8.count > 480 {
+                Text("Reduce the title to 480 bytes and snippet text to 64 KiB before saving.")
+                    .font(theme.typography.caption).foregroundStyle(theme.palette.warning)
+            }
             if let error = library.lastError {
                 Text(error).font(theme.typography.caption).foregroundStyle(theme.palette.warning)
             }
@@ -340,7 +349,8 @@ private struct ClipboardSnippetEditor: View {
                     if library.saveSnippet(id: snippetID, title: title, text: text, isPinned: isPinned) != nil { dismiss() }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || title.count > 120 || text.isEmpty || text.count > ClipboardLibrary.maximumSnippetCharacters)
+                .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || title.count > 120 ||
+                    title.utf8.count > 480 || !ClipboardLibrary.isValidSnippetText(text))
                 .accessibilityIdentifier("clipboard.editorSave")
             }
         }

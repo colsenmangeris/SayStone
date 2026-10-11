@@ -108,6 +108,16 @@ struct UtilityWorkflowView: View {
                     .foregroundStyle(.red).textSelection(.enabled)
                     .accessibilityIdentifier("utilities.workflows.error")
             }
+            if store.requiresReload {
+                Button("Reload saved workflows") {
+                    store.reload()
+                    editorError = nil
+                }
+                .disabled(runner.state.isRunning)
+                .accessibilityIdentifier("utilities.workflows.reload")
+                Text("Your current draft is kept. Review the saved workflows before saving again.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             if store.recoveryFileURL != nil {
                 Text("The previous unreadable file was preserved in the workflow data folder.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -176,7 +186,7 @@ struct UtilityWorkflowView: View {
 
             GroupBox("Workflow input") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("The first step receives this authored text. A step can instead use the latest transcript or its own text.")
+                    Text("The first step receives this authored text. Latest transcript steps use one snapshot captured when the run starts; a step can also use its own text.")
                         .font(.caption).foregroundStyle(.secondary)
                     PromptTextView(
                         text: $initialText,
@@ -357,7 +367,7 @@ private struct UtilityWorkflowStepEditor: View {
             Text("Choose a shortcut you have reviewed. SayStone runs its fixed name with separate arguments.")
                 .font(.caption).foregroundStyle(.secondary)
         case .copyLatestTranscript:
-            Text("Copies the latest raw transcript and passes that text to the next step.")
+            Text("Copies the transcript captured when this run starts and passes that text to the next step.")
                 .font(.caption).foregroundStyle(.secondary)
         case .pastePlainText:
             Text("Reads clipboard text only when this step runs. The target must still match the captured field.")

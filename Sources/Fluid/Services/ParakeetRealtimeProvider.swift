@@ -62,7 +62,7 @@ final class ParakeetRealtimeProvider: TranscriptionProvider {
         let engine = StreamingEouAsrManager(configuration: configuration, chunkSize: self.chunkSize)
         let progressRelay = ModelPreparationProgressRelay(progressHandler)
         do {
-            try await engine.loadModelsFromHuggingFace(progressHandler: { progress in
+            try await engine.loadModelsFromHuggingFace(to: Self.cacheRootDirectory(), progressHandler: { progress in
                 switch progress.phase {
                 case .listing:
                     progressRelay.report(.preparingDownload)
@@ -217,7 +217,13 @@ final class ParakeetRealtimeProvider: TranscriptionProvider {
     }
 
     private func modelDirectory() -> URL {
-        Self.cacheRootDirectory().appendingPathComponent(Repo.parakeetEou160.folderName, isDirectory: true)
+        let repo: Repo
+        switch self.chunkSize {
+        case .ms160: repo = .parakeetEou160
+        case .ms320: repo = .parakeetEou320
+        case .ms1280: repo = .parakeetEou1280
+        }
+        return Self.cacheRootDirectory().appendingPathComponent(repo.folderName, isDirectory: true)
     }
 
     private func missingRequiredModelFiles() -> [String] {

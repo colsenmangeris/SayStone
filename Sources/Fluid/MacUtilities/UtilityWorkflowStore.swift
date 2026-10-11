@@ -3,16 +3,30 @@ import Foundation
 
 @MainActor
 final class UtilityWorkflowStore: ObservableObject {
-    static let maximumWorkflows = 100
-    static let maximumFileBytes = 4_194_304
+    nonisolated static let maximumWorkflows = 100
+    nonisolated static let maximumFileBytes = 4_194_304
 
     @Published private(set) var workflows: [UtilityWorkflow] = []
     @Published private(set) var errorMessage: String?
     @Published private(set) var recoveryFileURL: URL?
+    @Published private(set) var requiresReload = false
 
     let url: URL
     private var malformedFileNeedsPreservation = false
     private var unsupportedVersion: Int?
+    private var loadedFileStamp: FileStamp?
+
+    private struct FileStamp: Equatable {
+        let size: Int
+        let modifiedAt: Date?
+        let fileNumber: UInt64?
+
+        init(_ attributes: [FileAttributeKey: Any]) {
+            size = (attributes[.size] as? NSNumber)?.intValue ?? UtilityWorkflowStore.maximumFileBytes + 1
+            modifiedAt = attributes[.modificationDate] as? Date
+            fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.uint64Value
+        }
+    }
 
     private struct Document: Codable {
         let version: Int
@@ -30,12 +44,23 @@ final class UtilityWorkflowStore: ObservableObject {
         malformedFileNeedsPreservation = false
         unsupportedVersion = nil
         errorMessage = nil
+        requiresReload = false
+        loadedFileStamp = nil
         guard FileManager.default.fileExists(atPath: url.path) else { workflows = []; return }
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            loadedFileStamp = FileStamp(attributes)
             let size = (attributes[.size] as? NSNumber)?.intValue ?? Self.maximumFileBytes + 1
             guard size <= Self.maximumFileBytes else { throw UtilityWorkflowError.malformedStorage }
-            let data = try Data(contentsOf: url)
+            let handle = try FileHandle(forReadingFrom: url)
+            defer { try? handle.close() }
+            var data = Data()
+            while data.count <= Self.maximumFileBytes {
+                let limit = min(65_536, Self.maximumFileBytes + 1 - data.count)
+                guard let chunk = try handle.read(upToCount: limit), !chunk.isEmpty else { break }
+                data.append(chunk)
+            }
+            guard data.count <= Self.maximumFileBytes else { throw UtilityWorkflowError.malformedStorage }
             // Inspect the version first so newer definitions are never overwritten.
             let version = (try JSONSerialization.jsonObject(with: data) as? [String: Any])?["version"] as? Int
             guard let version else { throw UtilityWorkflowError.malformedStorage }
@@ -91,6 +116,16 @@ final class UtilityWorkflowStore: ObservableObject {
         do {
             if let unsupportedVersion { throw UtilityWorkflowError.unsupportedSchema(unsupportedVersion) }
             try Self.validate(updated)
+            let currentStamp: FileStamp?
+            if FileManager.default.fileExists(atPath: url.path) {
+                currentStamp = FileStamp(try FileManager.default.attributesOfItem(atPath: url.path))
+            } else {
+                currentStamp = nil
+            }
+            guard currentStamp == loadedFileStamp else {
+                requiresReload = true
+                throw UtilityWorkflowError.storageChanged
+            }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(Document(version: 1, workflows: updated))
@@ -99,6 +134,7 @@ final class UtilityWorkflowStore: ObservableObject {
             }
             let directory = url.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
             if malformedFileNeedsPreservation, FileManager.default.fileExists(atPath: url.path) {
                 let backup = directory.appendingPathComponent("workflows.recovered.\(UUID().uuidString).json")
                 try FileManager.default.moveItem(at: url, to: backup)
@@ -108,7 +144,9 @@ final class UtilityWorkflowStore: ObservableObject {
             }
             try data.write(to: url, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            loadedFileStamp = FileStamp(try FileManager.default.attributesOfItem(atPath: url.path))
             workflows = updated
+            requiresReload = false
             errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription

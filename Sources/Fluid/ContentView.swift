@@ -2694,6 +2694,10 @@ struct ContentView: View {
 
         if route == .normal,
            MacUtilityCoordinator.shared.runVoiceWorkflowIfMatched(transcribedText, target: self.recordingFocusTarget) {
+            // The runner snapshots the previous transcript before this entry is
+            // saved. Preserve the recognized trigger even when the workflow
+            // cannot start or a later step fails, without typing it externally.
+            self.preserveVoiceWorkflowTrigger(transcribedText, audio: audioSnapshot, asrMilliseconds: transcriptionDurationMilliseconds)
             await self.menuBarManager.finishProcessingAndHideOverlay()
             return
         }
@@ -2847,6 +2851,9 @@ struct ContentView: View {
         self.appBench("pipeline_text_ready id=\(pipelineID) stopToReadyMs=\((finalTextReadyAt - pipelineStartedAt) * 1000)")
 
         let shouldPersistOutputs = route == .normal
+        if shouldPersistOutputs, !sendsExistingDraft {
+            MacUtilityCoordinator.shared.recordDictationText(finalText)
+        }
         if !shouldPersistOutputs {
             DebugLogger.shared.info(
                 "Sandbox route active: suppressing clipboard/history/external typing side effects",
@@ -3026,6 +3033,25 @@ struct ContentView: View {
                 textReadyAt: finalTextReadyAt
             )
         }
+    }
+
+    private func preserveVoiceWorkflowTrigger(_ text: String, audio: DictationAudioSnapshot?, asrMilliseconds: Int?) {
+        self.asr.finalText = text
+        guard self.settings.saveTranscriptionHistory else { return }
+        let appInfo = self.recordingAppInfo ?? self.getCurrentAppInfo()
+        let entryID = UUID()
+        let timestamp = Date()
+        TranscriptionHistoryStore.shared.addEntry(
+            id: entryID,
+            timestamp: timestamp,
+            rawText: text,
+            processedText: text,
+            appName: appInfo.name,
+            windowTitle: appInfo.windowTitle,
+            wasAIProcessed: false,
+            transcriptionDurationMilliseconds: asrMilliseconds
+        )
+        self.persistDictationAudioIfNeeded(audio, entryID: entryID, timestamp: timestamp, model: self.transcriptionModelInfo.model)
     }
 
     private func processDictationPromptTest(_ transcribedText: String) async {

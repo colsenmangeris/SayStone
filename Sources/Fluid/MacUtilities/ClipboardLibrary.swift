@@ -32,11 +32,15 @@ struct ClipboardHistoryOptions: Codable, Equatable {
         var copy = self
         copy.retentionDays = min(max(retentionDays, 1), 30)
         copy.maximumItems = min(max(maximumItems, 1), 500)
-        copy.excludedBundleIdentifiers = Set(excludedBundleIdentifiers.prefix(200).compactMap {
+        copy.excludedBundleIdentifiers = Set(normalizedExcludedBundleIdentifiers.sorted().prefix(ClipboardLibrary.maximumExcludedAppCount))
+        return copy
+    }
+
+    var normalizedExcludedBundleIdentifiers: Set<String> {
+        Set(excludedBundleIdentifiers.compactMap {
             let value = $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             return ClipboardLibrary.isValidBundleIdentifier(value) ? value : nil
         })
-        return copy
     }
 }
 
@@ -52,8 +56,11 @@ struct ClipboardSnapshot {
 /// Local, explicitly opted-in collection. Polling never starts from init.
 @MainActor final class ClipboardLibrary: ObservableObject {
     nonisolated static let maximumSnippetCharacters = 16_384
+    nonisolated static let maximumSnippetBytes = 65_536
     nonisolated static let maximumSnippetCount = 200
     nonisolated static let maximumHistoryCharacters = 4_096
+    nonisolated static let maximumHistoryBytes = 16_384
+    nonisolated static let maximumExcludedAppCount = 200
     private static let maximumStorageBytes = 8 * 1_024 * 1_024
 
     /// Marker names follow https://nspasteboard.org/; confidential and transient
@@ -75,6 +82,7 @@ struct ClipboardSnapshot {
     @Published private(set) var history: [ClipboardHistoryEntry] = []
     @Published private(set) var options = ClipboardHistoryOptions()
     @Published private(set) var lastError: String?
+    @Published private(set) var isHistoryCollectionPaused = false
     var isMonitoring: Bool { timer != nil }
 
     private let storageURL: URL
@@ -83,6 +91,7 @@ struct ClipboardSnapshot {
     private let changeCountProvider: @MainActor () -> Int
     private let snapshotProvider: @MainActor (Set<String>) -> ClipboardSnapshot?
     private var timer: Timer?
+    private var historyExpiryTimer: Timer?
     private var lastObservedChangeCount: Int?
     private var preservesUnreadableDocument = false
 
@@ -112,9 +121,13 @@ struct ClipboardSnapshot {
         self.changeCountProvider = changeCountProvider
         self.snapshotProvider = snapshotProvider
         load()
+        scheduleHistoryExpiry()
     }
 
-    deinit { timer?.invalidate() }
+    deinit {
+        timer?.invalidate()
+        historyExpiryTimer?.invalidate()
+    }
 
     func lookupSnippet(id: UUID) -> ClipboardSnippet? {
         snippets.first { $0.id == id }
@@ -125,14 +138,17 @@ struct ClipboardSnapshot {
     ) -> UUID? {
         guard !preservesUnreadableDocument else { return nil }
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleanTitle.isEmpty, cleanTitle.count <= 120, !text.isEmpty,
-              text.count <= Self.maximumSnippetCharacters else {
-            lastError = "Give the snippet a title of up to 120 characters and text of up to 16,384 characters."
+        guard !cleanTitle.isEmpty, cleanTitle.count <= 120, cleanTitle.utf8.count <= 480,
+              Self.isValidSnippetText(text) else {
+            lastError = "Give the snippet a title of up to 120 characters (480 bytes) and text of up to 16,384 characters (64 KiB)."
             return nil
         }
+        var updatedSnippets = snippets
         if let id, let index = snippets.firstIndex(where: { $0.id == id }) {
-            snippets[index] = ClipboardSnippet(id: id, title: cleanTitle, text: text, isPinned: isPinned, updatedAt: now())
-            persist()
+            updatedSnippets[index] = ClipboardSnippet(id: id, title: cleanTitle, text: text, isPinned: isPinned, updatedAt: now())
+            guard persist(snippets: updatedSnippets) else { return nil }
+            snippets = updatedSnippets
+            resumeMonitoringIfEnabled()
             return id
         }
         guard snippets.count < Self.maximumSnippetCount else {
@@ -140,23 +156,30 @@ struct ClipboardSnapshot {
             return nil
         }
         let newID = UUID()
-        snippets.append(ClipboardSnippet(id: newID, title: cleanTitle, text: text, isPinned: isPinned, updatedAt: now()))
-        persist()
+        updatedSnippets.append(ClipboardSnippet(id: newID, title: cleanTitle, text: text, isPinned: isPinned, updatedAt: now()))
+        guard persist(snippets: updatedSnippets) else { return nil }
+        snippets = updatedSnippets
+        resumeMonitoringIfEnabled()
         return newID
     }
 
     func removeSnippet(id: UUID) {
         guard !preservesUnreadableDocument else { return }
-        snippets.removeAll { $0.id == id }
-        persist()
+        let updatedSnippets = snippets.filter { $0.id != id }
+        guard updatedSnippets != snippets, persist(snippets: updatedSnippets) else { return }
+        snippets = updatedSnippets
+        resumeMonitoringIfEnabled()
     }
 
     func setPinned(_ pinned: Bool, id: UUID) {
         guard !preservesUnreadableDocument else { return }
         guard let index = snippets.firstIndex(where: { $0.id == id }) else { return }
-        snippets[index].isPinned = pinned
-        snippets[index].updatedAt = now()
-        persist()
+        var updatedSnippets = snippets
+        updatedSnippets[index].isPinned = pinned
+        updatedSnippets[index].updatedAt = now()
+        guard persist(snippets: updatedSnippets) else { return }
+        snippets = updatedSnippets
+        resumeMonitoringIfEnabled()
     }
 
     func matchingSnippets(_ query: String) -> [ClipboardSnippet] {
@@ -177,24 +200,35 @@ struct ClipboardSnapshot {
         updateOptions(updated)
     }
 
-    func updateOptions(_ updated: ClipboardHistoryOptions) {
-        guard !preservesUnreadableDocument else { return }
+    @discardableResult func updateOptions(_ updated: ClipboardHistoryOptions) -> Bool {
+        guard !preservesUnreadableDocument else { return false }
+        guard updated.normalizedExcludedBundleIdentifiers.count <= Self.maximumExcludedAppCount else {
+            lastError = "The library can exclude up to 200 apps. Remove an exclusion before adding another."
+            return false
+        }
         let wasEnabled = options.isEnabled
         options = updated.bounded
         pruneHistory()
-        persist()
+        if !options.isEnabled { stopMonitoring() }
+        guard persist() else {
+            // Failed opt-in must not start collection. Privacy reductions remain
+            // effective in this process even if storage cannot be updated.
+            if !wasEnabled { options.isEnabled = false }
+            return false
+        }
         if options.isEnabled {
             if !wasEnabled { stopMonitoring() }
             resumeMonitoringIfEnabled()
         } else {
             stopMonitoring()
         }
+        return true
     }
 
     /// Called by app lifecycle after startup. The pre-opt-in/current clipboard
     /// is intentionally skipped; enabling collection only reads its change count.
     func resumeMonitoringIfEnabled() {
-        guard options.isEnabled, allowsPolling, timer == nil else { return }
+        guard options.isEnabled, !isHistoryCollectionPaused, allowsPolling, timer == nil else { return }
         lastObservedChangeCount = changeCountProvider()
         let timer = Timer(timeInterval: 0.75, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.poll() }
@@ -214,18 +248,41 @@ struct ClipboardSnapshot {
         history = []
         // Ignore current content after clearing, so it is not immediately added.
         if timer != nil { lastObservedChangeCount = changeCountProvider() }
-        persist()
+        if persist() { resumeMonitoringIfEnabled() }
     }
 
     func removeHistoryEntry(id: UUID) {
         guard !preservesUnreadableDocument else { return }
         history.removeAll { $0.id == id }
-        persist()
+        if persist() { resumeMonitoringIfEnabled() }
+    }
+
+    /// Retention applies even after collection is disabled, without reading the
+    /// clipboard. On write failure, expiry still removes the in-memory entries.
+    func expireHistory() {
+        guard !preservesUnreadableDocument else { return }
+        if pruneHistory() {
+            if persist() { resumeMonitoringIfEnabled() }
+        } else {
+            scheduleHistoryExpiry()
+        }
+    }
+
+    private func scheduleHistoryExpiry() {
+        historyExpiryTimer?.invalidate()
+        historyExpiryTimer = nil
+        guard allowsPolling, let oldest = history.map(\.capturedAt).min() else { return }
+        let remaining = oldest.addingTimeInterval(Double(options.retentionDays) * 86_400).timeIntervalSince(now())
+        let timer = Timer(timeInterval: max(0.05, remaining + 0.05), repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.expireHistory() }
+        }
+        historyExpiryTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     func poll() {
-        guard options.isEnabled, allowsPolling else { return }
-        if pruneHistory() { persist() }
+        guard options.isEnabled, !isHistoryCollectionPaused, allowsPolling else { return }
+        if pruneHistory(), !persist() { return }
         let count = changeCountProvider()
         guard let previousCount = lastObservedChangeCount else {
             lastObservedChangeCount = count
@@ -239,10 +296,10 @@ struct ClipboardSnapshot {
 
     /// A testable capture boundary. No system clipboard reads occur here.
     func captureIfChanged(snapshot: ClipboardSnapshot) {
-        guard !preservesUnreadableDocument, options.isEnabled,
+        guard !preservesUnreadableDocument, options.isEnabled, !isHistoryCollectionPaused,
               Self.excludedPasteboardTypes.isDisjoint(with: snapshot.types),
               !isExcluded(source: snapshot.sourceBundleIdentifier, observed: snapshot.observedBundleIdentifier),
-              !snapshot.text.isEmpty, snapshot.text.count <= Self.maximumHistoryCharacters else { return }
+              Self.isValidHistoryText(snapshot.text) else { return }
         let removedExpiredEntries = pruneHistory()
         if let first = history.first, first.text == snapshot.text {
             if removedExpiredEntries { persist() }
@@ -252,8 +309,8 @@ struct ClipboardSnapshot {
             id: UUID(),
             text: snapshot.text,
             capturedAt: now(),
-            sourceBundleIdentifier: snapshot.sourceBundleIdentifier,
-            observedBundleIdentifier: snapshot.observedBundleIdentifier
+            sourceBundleIdentifier: Self.normalizedBundleIdentifier(snapshot.sourceBundleIdentifier),
+            observedBundleIdentifier: Self.normalizedBundleIdentifier(snapshot.observedBundleIdentifier)
         ), at: 0)
         pruneHistory()
         persist()
@@ -261,6 +318,20 @@ struct ClipboardSnapshot {
 
     nonisolated static func isValidBundleIdentifier(_ value: String) -> Bool {
         value.count <= 200 && value.range(of: "^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+$", options: .regularExpression) != nil
+    }
+
+    nonisolated static func isValidSnippetText(_ text: String) -> Bool {
+        !text.isEmpty && text.count <= maximumSnippetCharacters && text.utf8.count <= maximumSnippetBytes
+    }
+
+    nonisolated private static func isValidHistoryText(_ text: String) -> Bool {
+        !text.isEmpty && text.count <= maximumHistoryCharacters && text.utf8.count <= maximumHistoryBytes
+    }
+
+    nonisolated private static func normalizedBundleIdentifier(_ value: String?) -> String? {
+        guard let value else { return nil }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return isValidBundleIdentifier(normalized) ? normalized : nil
     }
 
     static func readSnapshot(
@@ -272,29 +343,28 @@ struct ClipboardSnapshot {
         let itemTypes = (pasteboard.pasteboardItems ?? []).flatMap(\.types)
         let types = Set(((pasteboard.types ?? []) + itemTypes).map(\.rawValue))
         guard excludedPasteboardTypes.isDisjoint(with: types),
-              observedBundleIdentifier.map({ !exclusions.contains($0.lowercased()) }) ?? true else { return nil }
+              normalizedBundleIdentifier(observedBundleIdentifier).map({ !exclusions.contains($0) }) ?? true else { return nil }
         let source = pasteboard.string(forType: NSPasteboard.PasteboardType("org.nspasteboard.source"))
-        guard source.map({ !exclusions.contains($0.lowercased()) }) ?? true,
+        guard normalizedBundleIdentifier(source).map({ !exclusions.contains($0) }) ?? true,
               let text = pasteboard.string(forType: .string), pasteboard.changeCount == before else { return nil }
         return ClipboardSnapshot(
             changeCount: before,
             text: text,
             types: types,
-            sourceBundleIdentifier: source,
-            observedBundleIdentifier: observedBundleIdentifier
+            sourceBundleIdentifier: normalizedBundleIdentifier(source),
+            observedBundleIdentifier: normalizedBundleIdentifier(observedBundleIdentifier)
         )
     }
 
     private func isExcluded(source: String?, observed: String?) -> Bool {
-        [source, observed].compactMap { $0?.lowercased() }.contains { options.excludedBundleIdentifiers.contains($0) }
+        [source, observed].compactMap(Self.normalizedBundleIdentifier).contains { options.excludedBundleIdentifiers.contains($0) }
     }
 
     @discardableResult private func pruneHistory() -> Bool {
         let previous = history
         let cutoff = now().addingTimeInterval(-Double(options.retentionDays) * 86_400)
         history = Array(history.filter {
-            $0.capturedAt >= cutoff && $0.capturedAt <= now() && !$0.text.isEmpty &&
-                $0.text.count <= Self.maximumHistoryCharacters &&
+            $0.capturedAt >= cutoff && $0.capturedAt <= now() && Self.isValidHistoryText($0.text) &&
                 !isExcluded(source: $0.sourceBundleIdentifier, observed: $0.observedBundleIdentifier)
         }.sorted { $0.capturedAt > $1.capturedAt }.prefix(options.maximumItems))
         return previous != history
@@ -308,12 +378,15 @@ struct ClipboardSnapshot {
                 throw CocoaError(.fileReadTooLarge)
             }
             let document = try JSONDecoder().decode(Document.self, from: Data(contentsOf: storageURL))
-            guard document.schemaVersion == 1 else { throw CocoaError(.coderReadCorrupt) }
+            guard document.schemaVersion == 1,
+                  document.options.normalizedExcludedBundleIdentifiers.count <= Self.maximumExcludedAppCount else {
+                throw CocoaError(.coderReadCorrupt)
+            }
             options = document.options.bounded
             var seen = Set<UUID>()
             snippets = Array(document.snippets.filter {
                 seen.insert($0.id).inserted && !$0.title.isEmpty && $0.title.count <= 120 &&
-                    !$0.text.isEmpty && $0.text.count <= Self.maximumSnippetCharacters
+                    $0.title.utf8.count <= 480 && Self.isValidSnippetText($0.text)
             }.prefix(Self.maximumSnippetCount))
             seen = []
             history = document.history.filter { seen.insert($0.id).inserted }
@@ -325,20 +398,30 @@ struct ClipboardSnapshot {
         }
     }
 
-    private func persist() {
-        guard !preservesUnreadableDocument else { return }
+    @discardableResult private func persist() -> Bool {
+        persist(snippets: snippets)
+    }
+
+    private func persist(snippets proposedSnippets: [ClipboardSnippet]) -> Bool {
+        guard !preservesUnreadableDocument else { return false }
+        defer { scheduleHistoryExpiry() }
         do {
             let parent = storageURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: parent.path)
-            let document = Document(snippets: snippets, history: history, options: options)
+            let document = Document(snippets: proposedSnippets, history: history, options: options)
             let data = try JSONEncoder().encode(document)
             guard data.count <= Self.maximumStorageBytes else { throw CocoaError(.fileWriteOutOfSpace) }
             try data.write(to: storageURL, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: storageURL.path)
             lastError = nil
+            isHistoryCollectionPaused = false
+            return true
         } catch {
-            lastError = "The local clipboard library could not be saved. Check available storage and folder permissions."
+            stopMonitoring()
+            isHistoryCollectionPaused = true
+            lastError = "The local clipboard library could not be saved. Check storage and folder permissions. Collection is paused; unsaved settings or history may revert after restarting."
+            return false
         }
     }
 }

@@ -173,8 +173,64 @@ struct UtilityCoreTests {
         } catch is CancellationError { }
         try check(cancellationPasteReached && overlappingCopyRejected, "Overlapping transaction guard missing")
         try check(board.string(forType: .string) == "authored original\nsecond item", "Cancellation did not restore clipboard")
+
+        var cancellationBoundaryDispatches = 0
+        let boundaryCancellation = Task { @MainActor in
+            var checks = 0
+            try await UtilityClipboard.withTemporaryText(
+                "cancelled during focus validation",
+                on: board,
+                restoreDelay: 0,
+                targetIsValid: {
+                    checks += 1
+                    if checks == 3 { withUnsafeCurrentTask { $0?.cancel() } }
+                    return true
+                },
+                paste: { cancellationBoundaryDispatches += 1; return true }
+            )
+        }
+        do {
+            try await boundaryCancellation.value
+            throw Failure.check("Focus-boundary cancellation ignored")
+        } catch is CancellationError { }
+        try check(cancellationBoundaryDispatches == 0, "Paste dispatched after cancellation during focus validation")
+        try check(board.string(forType: .string) == "authored original\nsecond item", "Focus-boundary cancellation did not restore clipboard")
+
         try UtilityClipboard.copy("authored copy", to: board)
         try check(board.string(forType: .string) == "authored copy", "Copy action failed")
+
+        let lazyType = NSPasteboard.PasteboardType("com.architech.fixture-lazy-format")
+        let provider = ChangingClipboardProvider(board: board)
+        let lazyItem = NSPasteboardItem()
+        lazyItem.setString("authored lazy original", forType: .string)
+        lazyItem.setDataProvider(provider, forTypes: [lazyType])
+        board.clearContents()
+        _ = board.writeObjects([lazyItem])
+        do {
+            _ = try UtilityClipboard.capture(board)
+            throw Failure.check("Clipboard changed during format materialization was accepted")
+        } catch UtilityActionError.clipboardUnavailable { }
+        try check(provider.requests == 1, "Lazy clipboard fixture did not materialize")
+        try check(board.string(forType: .string) == "authored replacement during capture", "Concurrent copy during capture overwritten")
+
+        let oversized = NSPasteboardItem()
+        oversized.setString("authored oversized format fixture", forType: .string)
+        oversized.setData(Data(repeating: 7, count: UtilityClipboard.maximumSnapshotBytes + 1), forType: custom)
+        board.clearContents()
+        _ = board.writeObjects([oversized])
+        let oversizedCount = board.changeCount
+        do {
+            try await UtilityClipboard.withTemporaryText("fixture", on: board, restoreDelay: 0, targetIsValid: { true }, paste: { true })
+            throw Failure.check("Oversized clipboard snapshot accepted")
+        } catch UtilityActionError.clipboardTooLarge { }
+        try check(board.changeCount == oversizedCount, "Oversized snapshot rejection changed clipboard")
+
+        seed()
+        let snapshot = try UtilityClipboard.capture(board)
+        board.clearContents()
+        board.setString("authored copy after snapshot", forType: .string)
+        try check(!UtilityClipboard.restoreIfOwned(snapshot, to: board, changeCount: snapshot.changeCount), "Unowned snapshot restored")
+        try check(board.string(forType: .string) == "authored copy after snapshot", "Unowned restoration overwrote independent copy")
     }
 
     @MainActor
@@ -242,6 +298,21 @@ struct UtilityCoreTests {
         let status = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &info, size)
         try check(status != size || info.pbi_status == SZOMB, "Owned descendant survived timeout")
 
+        let spawnedFile = folder.appendingPathComponent("synthetic-spawned-pid")
+        do {
+            _ = try await UtilityProcessRunner.run(executableURL: executable, arguments: ["term-spawn-tree", spawnedFile.path], timeout: 0.5)
+            throw Failure.check("Signal-spawning tree timeout ignored")
+        } catch UtilityProcessError.timedOut { }
+        try check(FileManager.default.fileExists(atPath: spawnedFile.path + ".ready"), "Signal-spawning descendant did not become ready")
+        if FileManager.default.fileExists(atPath: spawnedFile.path) {
+            let spawnedPID = try String(contentsOf: spawnedFile, encoding: .utf8).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let pid = Int32(spawnedPID) else { throw Failure.check("Missing spawned synthetic child identity") }
+            defer { _ = Darwin.kill(pid, SIGKILL) }
+            var spawnedInfo = proc_bsdinfo()
+            let spawnedStatus = proc_pidinfo(pid, PROC_PIDTBSDINFO, 0, &spawnedInfo, size)
+            try check(spawnedStatus != size || spawnedInfo.pbi_status == SZOMB, "Descendant spawned during SIGTERM survived timeout")
+        }
+
         do {
             _ = try await UtilityProcessRunner.run(executableURL: folder.appendingPathComponent("missing"))
             throw Failure.check("Missing executable accepted")
@@ -250,5 +321,19 @@ struct UtilityCoreTests {
             _ = try await UtilityProcessRunner.run(executableURL: executable, timeout: .infinity)
             throw Failure.check("Invalid timeout accepted")
         } catch UtilityProcessError.invalidConfiguration { }
+    }
+}
+
+private nonisolated final class ChangingClipboardProvider: NSObject, NSPasteboardItemDataProvider {
+    let board: NSPasteboard
+    var requests = 0
+
+    init(board: NSPasteboard) { self.board = board }
+
+    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
+        requests += 1
+        item.setData(Data([11, 12]), forType: type)
+        board.clearContents()
+        board.setString("authored replacement during capture", forType: .string)
     }
 }

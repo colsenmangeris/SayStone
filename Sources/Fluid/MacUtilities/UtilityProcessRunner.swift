@@ -217,20 +217,21 @@ private nonisolated final class UtilityProcessSession: @unchecked Sendable {
             return
         }
 
-        // Stop the owned root briefly so it cannot create more children while we enumerate them.
+        // Freeze the owned root and each discovered child before shutdown. Sending
+        // SIGTERM and resuming them would let a handler spawn untracked replacements.
         let pid = process.processIdentifier
-        _ = Darwin.kill(pid, SIGSTOP)
+        guard let root = Self.identity(for: pid) else { return }
+        Self.signal(root, SIGSTOP)
+        let ownsProcessGroup = getpgid(pid) == pid
         let descendants = Self.descendants(of: pid)
-        for child in descendants.reversed() { Self.signal(child, SIGTERM) }
-        process.terminate()
-        _ = Darwin.kill(pid, SIGCONT)
 
-        // A process that ignores SIGTERM still has a hard bound. Capture child birth times to
-        // avoid ever signalling an unrelated process if macOS has since reused a PID.
-        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.25) {
-            for child in descendants.reversed() { Self.signal(child, SIGKILL) }
-            if process.isRunning { _ = Darwin.kill(pid, SIGKILL) }
+        // Foundation may give the child its own process group. Only signal a group
+        // led by our still-identical frozen root; never the app's inherited group.
+        if ownsProcessGroup, Self.matches(root), getpgid(pid) == pid {
+            _ = Darwin.kill(-pid, SIGKILL)
         }
+        for child in descendants.reversed() { Self.signal(child, SIGKILL) }
+        Self.signal(root, SIGKILL)
     }
 
     private func didExit() {
@@ -282,10 +283,13 @@ private nonisolated final class UtilityProcessSession: @unchecked Sendable {
     }
 
     private static func signal(_ child: ChildIdentity, _ signal: Int32) {
-        guard let current = identity(for: child.pid),
-              current.startSeconds == child.startSeconds,
-              current.startMicroseconds == child.startMicroseconds else { return }
+        guard matches(child) else { return }
         _ = Darwin.kill(child.pid, signal)
+    }
+
+    private static func matches(_ child: ChildIdentity) -> Bool {
+        guard let current = identity(for: child.pid) else { return false }
+        return current.startSeconds == child.startSeconds && current.startMicroseconds == child.startMicroseconds
     }
 
     private static func descendants(of pid: pid_t) -> [ChildIdentity] {
@@ -301,6 +305,7 @@ private nonisolated final class UtilityProcessSession: @unchecked Sendable {
             // Unlike proc_listpids, proc_listchildpids returns a PID count, not a byte count.
             for child in children.prefix(min(Int(count), children.count)) where child > 0 {
                 if visited.insert(child).inserted, let identity = identity(for: child) {
+                    signal(identity, SIGSTOP)
                     result.append(identity)
                     parents.append(child)
                 }

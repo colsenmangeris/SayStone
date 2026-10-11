@@ -107,6 +107,7 @@ nonisolated enum UtilityWorkflowError: LocalizedError, Equatable {
     case unsupportedSchema(Int)
     case malformedStorage
     case duplicateVoicePhrase
+    case storageChanged
 
     var errorDescription: String? {
         switch self {
@@ -117,6 +118,7 @@ nonisolated enum UtilityWorkflowError: LocalizedError, Equatable {
         case .unsupportedSchema(let version): return "This workflow file uses version \(version). It was preserved; update SayStone before editing it."
         case .malformedStorage: return "The workflow file could not be read. It will be preserved in a recovery file before new workflows are saved."
         case .duplicateVoicePhrase: return "An enabled workflow already uses this voice phrase."
+        case .storageChanged: return "The workflow file changed since it was loaded. Reload saved workflows before saving again."
         }
     }
 }
@@ -162,7 +164,7 @@ final class UtilityWorkflowRunner: ObservableObject {
     @Published private(set) var currentStepID: UUID?
 
     private var runTask: Task<Void, Never>?
-    private var runIdentifier: UUID?
+    private(set) var runIdentifier: UUID?
 
     @discardableResult
     func start(
@@ -174,10 +176,25 @@ final class UtilityWorkflowRunner: ObservableObject {
         results = []
         output = nil
         currentStepID = nil
+        guard !Task.isCancelled else { state = .cancelled; return false }
+        let transcript: String?
         do {
             try workflow.validate()
             guard initialText.utf8.count <= UtilityWorkflow.maximumTextBytes else {
                 throw UtilityWorkflowError.tooMuchText
+            }
+            if workflow.steps.contains(where: {
+                $0.action.id == .copyLatestTranscript || UtilityWorkflow.usesText($0.action.id) && $0.input == .latestTranscript
+            }) {
+                guard let latest = latestTranscript(), !latest.isEmpty else {
+                    throw UtilityWorkflowError.missingTranscript
+                }
+                guard latest.utf8.count <= UtilityWorkflow.maximumTextBytes else {
+                    throw UtilityWorkflowError.tooMuchText
+                }
+                transcript = latest
+            } else {
+                transcript = nil
             }
         } catch {
             state = .failed(error.localizedDescription)
@@ -200,14 +217,15 @@ final class UtilityWorkflowRunner: ObservableObject {
                     let remaining = ContinuousClock.now.duration(to: deadline)
                     guard remaining > .zero else { throw UtilityWorkflowError.timedOut }
                     var request = step.action
-                    if UtilityWorkflow.usesText(request.id) {
+                    if request.id == .copyLatestTranscript {
+                        // Resolve this fixed action from the same run snapshot
+                        // as explicit Latest transcript input, never live history.
+                        request = UtilityActionRequest(id: .copyText, text: transcript)
+                    } else if UtilityWorkflow.usesText(request.id) {
                         switch step.input {
                         case .previousOutput: request.text = text
                         case .fixedText: break
                         case .latestTranscript:
-                            guard let transcript = latestTranscript(), !transcript.isEmpty else {
-                                throw UtilityWorkflowError.missingTranscript
-                            }
                             request.text = transcript
                         }
                     }
@@ -227,7 +245,7 @@ final class UtilityWorkflowRunner: ObservableObject {
                     self.results.append(UtilityWorkflowStepResult(
                         id: step.id,
                         index: index,
-                        action: request.id,
+                        action: step.action.id,
                         message: result.message,
                         output: result.output
                     ))
@@ -251,6 +269,12 @@ final class UtilityWorkflowRunner: ObservableObject {
         guard state == .running else { return }
         state = .cancelling
         runTask?.cancel()
+    }
+
+    /// A delayed caller's cancellation applies only to the run it started.
+    func cancel(runIdentifier: UUID) {
+        guard self.runIdentifier == runIdentifier else { return }
+        cancel()
     }
 
     private static func execute(
