@@ -1,11 +1,15 @@
 # SayStone Mac utilities: implementation and acceptance
 
-Date: 2026-10-10. Checkout:
+Updated: 2026-10-11. Checkout:
 `/Users/colsenmangeris/SayStone-worktrees/mac-workflows`, branch
 `feat/mac-workflows`. The isolation baseline is commit `3b4a14b`.
-The feature implementation is commit `5dcfe4e`; final functional code and CI
-verification are commit `8798db8`. Later receipt-only commits do not change the
-packaged app's code.
+The original feature implementation is commit `5dcfe4e`; the 2026-10-10
+functional verification and package receipt refer to `8798db8`. Overnight
+hardening is `a08452d` plus functional correction `e68b756`; subsequent test and
+acceptance-helper changes are `98289e2` and `9eaed9f`. The dated receipts below
+describe their respective revisions, rather than one interchangeable candidate.
+The packaged candidate is now `a06056a`, adding synthetic scene startup settings;
+that latest change has compilation/signature/lint checks but no GUI rerun.
 Implemented features are distinct from real-device acceptance.
 
 ## Runnable development app
@@ -18,6 +22,8 @@ Keychain service, model/cache paths, recovery audio and history are separate
 from the daily app. Updates and rollback installation are blocked in this
 identity. No daily settings/history were copied into development. The daily
 `~/Applications/SayStone.app` was not replaced or reconfigured.
+The pinned vocabulary tokenizer's ordinary-cache read remains the exception
+described in [FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md).
 
 Build using the native shared SayStone scheme, My Mac, Development, Swift 5,
 macOS 15 deployment support. See [START-HERE.md](START-HERE.md) for package-plugin
@@ -71,7 +77,7 @@ native Xcode CLI builds and XCTest supplied the build/test evidence.
   suppression. The [fork policy](UPSTREAM-POLICY.md) requires explicit upstream
   review and adoption; no automatic merge or release was introduced.
 
-## Validation receipts
+## Validation receipts: 2026-10-10 candidate
 
 Integrated native results are recorded below. Fixture and
 build success do not prove microphone routing, macOS permission behavior,
@@ -119,18 +125,107 @@ commit; stale hosted-test plug-ins were removed by Xcode's app build. Developmen
 model metadata is empty because its separate model directory has not been
 populated. Model download/readiness and microphone acceptance remain live checks.
 
+## Overnight update: 2026-10-11
+
+The overnight check sequence ran through `9eaed9f` on `feat/mac-workflows`. Commit `a08452d`
+hardened utility storage, clipboard ownership, process cancellation and isolated
+model-cache selection. Commit `e68b756` corrected the voice-trigger recovery
+model lookup after the first overnight compilation exposed it. Commit `98289e2`
+changed native smoke-test field focus and documented authored speech checks;
+`9eaed9f` made the speech helper reject skipped tests as acceptance.
+
+Workflow execution now snapshots latest-transcript input once before any steps,
+rejects an already-cancelled caller, and scopes delayed cancellation to the
+specific run. A cancellation belonging to an older run cannot stop a newer one.
+The store bounds reads, detects ordinary stale saves before replacing bytes and
+offers reload while retaining the draft. This metadata check is not a
+cross-process file lock. Intent copying uses the coordinator's exclusion guard.
+Current ordinary dictation is available in memory even with history disabled;
+recognized voice triggers remain recoverable in SayStone without replacing the
+previous ordinary transcript used by the workflow.
+
+| Overnight check | Result and receipt |
+| --- | --- |
+| Six synthetic suites | Passed: development isolation, Flash cache routing, utility core, clipboard library, workflows and utility shortcuts; `/tmp/saystone-overnight-fixtures.log` |
+| Scoped workflow cancellation regression | Passed; `/tmp/saystone-overnight-workflow-lease.log` |
+| Strict SwiftLint 0.63.2 | Zero findings; `/tmp/saystone-overnight-lint.json` |
+| Signed native build-for-testing at `e68b756` | Passed; `/tmp/SayStone-Overnight-Build-Fixed.xcresult`, `/tmp/saystone-overnight-test-build-fixed.log` |
+| Signed native build-for-testing at `98289e2` | Passed; `/tmp/SayStone-Overnight-FocusBuild.xcresult`, `/tmp/saystone-overnight-focus-build.log`; generated-framework repair recorded in `/tmp/saystone-overnight-focus-repair.log` |
+| Safe hosted native units | 52 passed, zero failures at the functional candidate, including four new isolated coordinator cases; `/tmp/SayStone-Overnight-Native.xcresult`, `/tmp/saystone-overnight-native.log` |
+| Initial overnight native UI run | Three of four passed. Palette/transform failed after the utility window was lost; the combined run was not accepted. Same native result bundle/log above |
+| Latest native UI run after focus change | Zero of four passed; all failed the setup assertion before scenario acceptance. `/tmp/SayStone-Overnight-FocusUI.xcresult`, `/tmp/saystone-overnight-focus-ui.log`, `/tmp/saystone-overnight-focus-ui-summary.json` |
+| Whisper Tiny authored WAV, initial run | One native test passed, zero failures/skips; two consecutive final recognitions produced the authored phrase. `/tmp/SayStone-Overnight-Whisper.xcresult`, `/tmp/saystone-overnight-whisper.log` |
+| Whisper Tiny authored WAV, cached run | One native test passed, zero failures/skips; two further consecutive final recognitions succeeded. `/tmp/SayStone-Overnight-Whisper-Cached.xcresult`, `/tmp/saystone-overnight-whisper-cached.log` |
+| Parakeet V2 authored WAV | Not accepted: one test skipped because fewer than 8 GB were available. `/tmp/SayStone-Overnight-Parakeet-Preflight.xcresult`, `/tmp/saystone-overnight-parakeet-preflight.log` |
+| Speech-helper skip guard at `9eaed9f` | Confirmed not accepted (`passed=0`, `failed=0`, `skipped=1`), helper exit 3; `/tmp/SayStone-Overnight-Parakeet-Guard.xcresult`, `/tmp/saystone-overnight-parakeet-guard.log` |
+
+The older four-of-four UI pass remains a historical receipt for the October 10
+candidate. It does **not** establish UI acceptance of the overnight revisions;
+the latest signed UI setup needs investigation and a complete passing repeat.
+The four new unit cases cover intent exclusion between workflow steps,
+pre-cancelled requests, literal in-memory transcript retention and copy dispatch
+to a named synthetic pasteboard. They do not establish App Intents discovery in
+Apple Shortcuts or insertion into a real target application.
+
+Whisper acceptance used the repository's authored WAV and an isolated model
+location, with repeated finals and a cached rerun. It establishes that narrow
+base-recognition path, not microphone routing or every provider. Parakeet
+inference remains pending sufficient disk space. Vocabulary boosting remains
+unaccepted: pinned FluidAudio selects its ordinary model-cache location for
+tokenizer reads even when SayStone supplies private CTC models. The source review
+and bounded dependency follow-up are in
+[FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md). No daily
+cache contents were inspected or changed to work around this limitation.
+
+Cross-device auth, profile activation and physical route/fallback/cancellation
+checks remain pending. No hosted CI run, daily-app replacement or release is
+established by these overnight results. The October 10 package receipt above
+also remains revision-specific.
+
+### Final package and synthetic startup candidate
+
+Commit `a06056a` adds `.defaultLaunchBehavior(.presented)` and
+`.restorationBehavior(.disabled)` only while the isolated app is in synthetic
+UI mode, retaining `.automatic` normally. This addresses a concrete gap in the
+test startup path when no workspace window appears. Scene restoration as the
+actual failure trigger remains an inference. API availability was checked in
+Apple's documentation and the installed SwiftUI declarations: macOS 15 support
+is retained. The latest source passes strict lint, but native UI acceptance is
+still pending because no foreground automation was resumed.
+
+Signed app packaging passed using the normal helper at `a06056a`. The generated
+framework was repaired, `codesign --verify --deep --strict` passed, and Xcode
+removed hosted-test plug-ins. Bundle identity is still
+`com.architech.saystone.development`; runtime commit is
+`a06056ac1806b27bb82dbc3e440aa9cf24c198b4`. Log:
+`/tmp/saystone-morning-scene-build.log`. The standard Development Parakeet model
+digest remains empty; the authored Whisper acceptance model is separate.
+
+Helper-only commit `c9dad5e` verifies the expected hosted test-bundle path and
+refuses a missing bundle before XCTest launch. That preflight passed against the
+final package; rebuilding native test products and repairing their host is
+required before the next authored speech run.
+
+The [morning handoff](MORNING-UPDATE-2026-10-11.md) and
+[compact receipt snapshot](validation/2026-10-11-local-receipts.json) preserve
+the current state without depending solely on temporary result bundles.
+
 ## Remaining acceptance and next actions
 
-1. Use the isolated development app for authored microphone tests: built-in and
+1. Resolve the signed native UI setup failure and repeat all four smoke scenarios
+   against the final candidate during an agreed uninterrupted test window or on
+   a dedicated test Mac. First verify native Computer Use background behavior if
+   using that tool for scoped checks. Preserve the failed receipts for comparison.
+2. Use the isolated development app for authored microphone tests: built-in and
    Bluetooth routing, hotplug, sleep/wake, hold/toggle, cancellation, recognition
    retry and raw fallback. Its separate identity needs its own macOS permissions.
-2. Grant the development app Accessibility only for the reviewed native test
+3. Grant the development app Accessibility only for the reviewed native test
    stage. Verify configured global shortcuts, denied permission, exact-field
    changes, several target apps, clipboard restoration and concurrent copying.
    Existing daily permission grants are not development acceptance.
-3. Discover and execute the App Intents in the real Apple Shortcuts app, check
+4. Discover and execute the App Intents in the real Apple Shortcuts app, check
    named-shortcut output/cancellation, and repeat compatibility on macOS 15.
-4. Follow [CROSS-DEVICE-ACCEPTANCE.md](CROSS-DEVICE-ACCEPTANCE.md). The user has
+5. Follow [CROSS-DEVICE-ACCEPTANCE.md](CROSS-DEVICE-ACCEPTANCE.md). The user has
    confirmed Mini/iPhone availability; read-only readiness is refreshed. The
    installed Forge release source and narrow auth issuer are now verified.
    Operator/data-root confirmation, selected initial profile authority, narrow
@@ -138,7 +233,7 @@ populated. Model download/readiness and microphone acceptance remain live checks
    route/fallback/cancel/retry/restart/concurrency receipts remain outstanding.
    Keep NeMo and Qwen TTS through acceptance. Do not overwrite the shared profile
    with an empty development profile.
-5. Run the updated hosted CI against an explicitly authorized push. Production
+6. Run the updated hosted CI against an explicitly authorized push. Production
    installation, deployment, service activation, publication and releases are
    separate actions, as required by [BUILD-PROMPT.txt](BUILD-PROMPT.txt).
 

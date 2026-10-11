@@ -23,6 +23,15 @@ recovery audio, local model downloads and deletion, logs, rollback storage and
 analytics storage resolve under this root. macOS preferences use the separate
 bundle domain under `~/Library/Preferences/`.
 
+FluidAudio's pinned vocabulary-boosting tokenizer loader is an exception to
+complete model-cache isolation: it reads `tokenizer.json` and
+`tokenizer_config.json` from the SDK's ordinary CTC cache path even when the
+app loads its CTC models from Development storage. Source review found no
+download or write in that tokenizer loader, and missing assets fall back to
+base ASR. Fully isolated vocabulary boosting is still pending; see
+[FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md). This
+review did not inspect the daily app's cache contents.
+
 Provider credentials and speech-profile tokens use the Keychain service
 `com.architech.saystone.development.provider-api-keys`. Both normal access
 and the settings screen's access probe use this service. No daily credentials
@@ -80,6 +89,37 @@ Build logs are local:
 `/tmp/saystone-development-build.log` and
 `/tmp/saystone-development-test-build.log`.
 
+### Overnight verification on 2026-10-11
+
+The Flash provider now passes its Development model destination explicitly to
+the pinned SDK. Its previous implicit default could write to the ordinary
+cache and then fail the app's private-path readiness check. Model-directory
+selection now matches all three streaming chunk choices. A standalone fixture
+compiles the actual provider against an SDK stub with a different public default
+and verifies the explicit destination, readiness and cache clearing for each
+chunk. Both pre-fix variants fail that fixture.
+
+The actual native Whisper Tiny provider recognized the repository's authored
+WAV as `Hello Fluid Voice` twice, then passed again using only the private cached
+model. Those tests use synthetic preferences with pronunciation matching and
+the custom dictionary explicitly disabled. The model is confined to the
+acceptance-specific Development directory:
+
+```text
+/Users/colsenmangeris/Library/Application Support/SayStone Development/Application Support/AuthoredSpeechAcceptance/WhisperModels
+```
+
+Receipts: `/tmp/SayStone-Overnight-Whisper.xcresult` and
+`/tmp/SayStone-Overnight-Whisper-Cached.xcresult`; one passing test and no skips
+or failures in each. This proves authored-file inference and repeated final
+recognition, not microphone routing or daily-use dictation. Standard Development
+provider caches were not populated by copying daily models.
+
+Parakeet v2 acceptance was explicitly skipped because less than its required
+8 GB was free. No Parakeet model download started. The receipt
+`/tmp/SayStone-Overnight-Parakeet-Guard.xcresult` contains one skip and zero
+passes; the acceptance helper returned exit status 3.
+
 ## Remaining native acceptance
 
 The Development app has since been launched for native utility smoke tests with
@@ -93,3 +133,10 @@ service was enabled. Hosted CI execution, native microphone routing,
 hotkeys, development permissions, cross-app paste and cross-device behavior
 remain unverified. Test those using authored audio/text and synthetic clipboard
 fixtures, with the Development configuration.
+
+Current Mac UI acceptance is also pending. The overnight combined run passed
+52 safe hosted units and three UI cases but lost the palette window; the latest
+UI-only run failed all four cases while waiting for the synthetic workspace in
+setup. Earlier passing UI receipts are historical and do not establish acceptance
+for this revision. Foreground XCTest automation is held until an uninterrupted
+test window or a dedicated test Mac is available.

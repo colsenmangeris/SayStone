@@ -1,0 +1,150 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-11",
+  "checkout": "/Users/colsenmangeris/SayStone-worktrees/mac-workflows",
+  "branch": "feat/mac-workflows",
+  "build": {
+    "result": "passed",
+    "app": "/Users/colsenmangeris/SayStone-worktrees/mac-workflows/DerivedData/Build/Products/Development/SayStone Development.app",
+    "log": "/tmp/saystone-morning-scene-build.log",
+    "metadata": {
+      "CFBundleIdentifier": "com.architech.saystone.development",
+      "CFBundleDisplayName": "SayStone Development",
+      "CFBundleExecutable": "SayStone Development",
+      "CFBundleShortVersionString": "1.6.10",
+      "CFBundleVersion": "22",
+      "LSMinimumSystemVersion": "15.0",
+      "SayStoneEngineRuntimeCommit": "a06056ac1806b27bb82dbc3e440aa9cf24c198b4",
+      "SayStoneEngineFluidAudioRevision": "3fd63887eef1dc25edea8263ce4b44aa854d898b",
+      "SayStoneEngineModelSha256": ""
+    },
+    "strictDeepSignature": "passed",
+    "hostedTestPluginsPresent": false
+  },
+  "testReceipts": [
+    {
+      "path": "/tmp/SayStone-Overnight-Native.xcresult",
+      "sourceRevision": "e68b756",
+      "result": "Failed",
+      "totalTestCount": 56,
+      "passedTests": 55,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "testFailures": [
+        {
+          "failureText": "Failed to get matching snapshot: No matches found for Descendants matching type TextField from input {(\n    Application, pid: 23653, title: 'SayStone Development'\n)}",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 53,
+          "testIdentifierString": "UtilitySmokeTests/testSearchTransformAndSyntheticPasteDenial()",
+          "testIdentifierURL": "test://com.apple.xcode/SayStone/SayStoneUITests/UtilitySmokeTests/testSearchTransformAndSyntheticPasteDenial",
+          "testName": "testSearchTransformAndSyntheticPasteDenial()"
+        }
+      ]
+    },
+    {
+      "path": "/tmp/SayStone-Overnight-FocusUI.xcresult",
+      "sourceRevision": "98289e2",
+      "result": "Failed",
+      "totalTestCount": 4,
+      "passedTests": 0,
+      "failedTests": 4,
+      "skippedTests": 0,
+      "testFailures": [
+        {
+          "failureText": "XCTAssertTrue failed",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 1,
+          "testIdentifierString": "UtilitySmokeTests/testSearchTransformAndSyntheticPasteDenial()",
+          "testIdentifierURL": "test://com.apple.xcode/SayStone/SayStoneUITests/UtilitySmokeTests/testSearchTransformAndSyntheticPasteDenial",
+          "testName": "testSearchTransformAndSyntheticPasteDenial()"
+        },
+        {
+          "failureText": "XCTAssertTrue failed",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 2,
+          "testIdentifierString": "UtilitySmokeTests/testShortcutValidationAndConflict()",
+          "testIdentifierURL": "test://com.apple.xcode/SayStone/SayStoneUITests/UtilitySmokeTests/testShortcutValidationAndConflict",
+          "testName": "testShortcutValidationAndConflict()"
+        },
+        {
+          "failureText": "XCTAssertTrue failed",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 3,
+          "testIdentifierString": "UtilitySmokeTests/testSnippetSaveEditAndHistoryOffByDefault()",
+          "testIdentifierURL": "test://com.apple.xcode/SayStone/SayStoneUITests/UtilitySmokeTests/testSnippetSaveEditAndHistoryOffByDefault",
+          "testName": "testSnippetSaveEditAndHistoryOffByDefault()"
+        },
+        {
+          "failureText": "XCTAssertTrue failed",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 4,
+          "testIdentifierString": "UtilitySmokeTests/testWorkflowTransformCopyAndPersistence()",
+          "testIdentifierURL": "test://com.apple.xcode/SayStone/SayStoneUITests/UtilitySmokeTests/testWorkflowTransformCopyAndPersistence",
+          "testName": "testWorkflowTransformCopyAndPersistence()"
+        }
+      ]
+    },
+    {
+      "path": "/tmp/SayStone-Overnight-Whisper.xcresult",
+      "sourceRevision": "98289e2",
+      "result": "Passed",
+      "totalTestCount": 1,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "testFailures": []
+    },
+    {
+      "path": "/tmp/SayStone-Overnight-Whisper-Cached.xcresult",
+      "sourceRevision": "98289e2",
+      "result": "Passed",
+      "totalTestCount": 1,
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "testFailures": []
+    },
+    {
+      "path": "/tmp/SayStone-Overnight-Parakeet-Guard.xcresult",
+      "sourceRevision": "98289e2; helper 9eaed9f",
+      "result": "Skipped",
+      "totalTestCount": 1,
+      "passedTests": 0,
+      "failedTests": 0,
+      "skippedTests": 1,
+      "testFailures": []
+    }
+  ],
+  "syntheticFixtures": {
+    "result": "passed",
+    "suiteCount": 6,
+    "log": "/tmp/saystone-overnight-fixtures.log",
+    "scope": [
+      "development/public storage isolation",
+      "Flash explicit cache routing with SDK stub",
+      "utility core",
+      "clipboard library",
+      "workflows",
+      "utility shortcuts"
+    ]
+  },
+  "lint": {
+    "version": "0.63.2",
+    "result": "passed",
+    "findingCount": 0,
+    "log": "/tmp/saystone-morning-lint.json"
+  },
+  "currentUIAcceptance": {
+    "result": "pending",
+    "sourceRevision": "a06056ac1806b27bb82dbc3e440aa9cf24c198b4",
+    "reason": "Synthetic scene launch/restoration candidate compiled and reviewed; no GUI rerun after the foreground automation pause."
+  },
+  "speechHelperMissingBundlePreflight": {
+    "result": "passed",
+    "sourceRevision": "c9dad5e",
+    "observedExitStatus": 1,
+    "log": "/tmp/saystone-morning-missing-test-host.log",
+    "appLaunchPerformed": false,
+    "note": "Final app-only package intentionally has no hosted test plug-ins; helper refused before XCTest launch."
+  }
+}
