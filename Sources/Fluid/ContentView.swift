@@ -3051,7 +3051,7 @@ struct ContentView: View {
             wasAIProcessed: false,
             transcriptionDurationMilliseconds: asrMilliseconds
         )
-        self.persistDictationAudioIfNeeded(audio, entryID: entryID, timestamp: timestamp, model: self.transcriptionModelInfo.model)
+        self.persistDictationAudioIfNeeded(audio, entryID: entryID, timestamp: timestamp, model: self.currentTranscriptionModelInfo().model)
     }
 
     private func processDictationPromptTest(_ transcribedText: String) async {
