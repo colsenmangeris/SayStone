@@ -71,3 +71,17 @@ xcodebuild test-without-building -xctestrun "$TEST_MANIFEST" \
     -destination 'platform=macOS,arch=arm64' -parallel-testing-enabled NO \
     -only-testing:"FluidDictationIntegrationTests/DevelopmentSpeechFixtureTests/$TEST_METHOD" \
     -resultBundlePath "$RESULT_BUNDLE"
+python3 - "$RESULT_BUNDLE" <<'PY'
+import json, subprocess, sys
+summary = json.loads(subprocess.run(
+    ['xcrun', 'xcresulttool', 'get', 'test-results', 'summary', '--path', sys.argv[1]],
+    check=True, capture_output=True, text=True
+).stdout)
+passed = summary.get('passedTests', 0)
+failed = summary.get('failedTests', 0)
+skipped = summary.get('skippedTests', 0)
+if passed != 1 or failed or skipped:
+    print(f'Authored speech NOT accepted: passed={passed}, failed={failed}, skipped={skipped}. See the receipt.', file=sys.stderr)
+    raise SystemExit(3)
+print('Authored speech accepted: one native test passed, with no failures or skips.')
+PY
