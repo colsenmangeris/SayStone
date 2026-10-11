@@ -3,8 +3,9 @@
 Date: 2026-10-10. Checkout:
 `/Users/colsenmangeris/SayStone-worktrees/mac-workflows`, branch
 `feat/mac-workflows`. The isolation baseline is commit `3b4a14b`.
-The feature implementation is commit `5dcfe4e`; subsequent local commits contain
-final permission guidance, CI verification and these acceptance receipts.
+The feature implementation is commit `5dcfe4e`; final functional code and CI
+verification are commit `8798db8`. Later receipt-only commits do not change the
+packaged app's code.
 Implemented features are distinct from real-device acceptance.
 
 ## Runnable development app
@@ -108,6 +109,15 @@ audio/models, general-clipboard history polling, Keychain, onboarding,
 analytics and local API/profile services. External actions are rejected in
 synthetic mode. Tests validate actual input values and rendered results; no
 private dictation, clipboard history or credentials were inspected.
+
+Final runnable packaging passed through `build.sh development` at code commit
+`8798db862d5099833e5638ecd54deb78480f2c3d`; log
+`/tmp/saystone-utilities-packaged-build.log`. The helper repaired the generated
+framework and strict deep signature verification passed again. Bundle metadata
+confirms the Development identity/name, macOS 15 minimum and that exact runtime
+commit; stale hosted-test plug-ins were removed by Xcode's app build. Development
+model metadata is empty because its separate model directory has not been
+populated. Model download/readiness and microphone acceptance remain live checks.
 
 ## Remaining acceptance and next actions
 

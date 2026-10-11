@@ -85,6 +85,10 @@ Xcode builds and generated-framework repair are serialized by root.
   language modes and compiles UI tests; macOS AMFI rejected the ad-hoc UI
   runner's launch. Signed UI execution remains a local gate and already passed
   above. Platform security was not disabled and no signing secrets were added.
+- Final runnable Development packaging at functional code commit `8798db8`
+  passed through the signed build helper, including framework repair and strict
+  deep verification. Bundle identity, macOS 15 minimum and runtime commit were
+  verified. No daily app installation or private-data copy occurred.
 
 ## Boundaries
 
