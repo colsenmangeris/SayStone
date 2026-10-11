@@ -52,12 +52,65 @@ non-draft PR updates against those branches, and manual dispatch. Build-affectin
 paths include the native project, package pins, `build.sh`, source, tests and
 local build/test helpers. Manual dispatch bypasses the changed-path filter.
 The Mac job selects the latest stable Xcode, explicitly builds Development in
-Swift 5 mode with macOS 15 deployment support, runs synthetic fixtures and only
-the named safe native unit tests plus `SayStoneUITests`. It caches package
+the native project, compiles `SayStoneUITests`, runs synthetic fixtures and
+executes only the named safe hosted unit tests. It caches package
 sources under this checkout's `DerivedData/SourcePackages`; it does not populate
 the daily app's model directories. Logs and `.xcresult` bundles are retained for
-14 days, including failed runs. Hosted unsigned builds do not prove a valid
-installed signature or native permission behavior.
+14 days, including failed runs.
+
+The app and native test targets retain their project-defined Swift 5 language
+mode and macOS 15 deployment floor. CI preserves each pinned Swift package's
+compiler mode, feature flags and platform declaration. Global command-line
+`SWIFT_VERSION` or `MACOSX_DEPLOYMENT_TARGET` overrides also reach package targets
+and must be omitted. A local CI-command check demonstrated this boundary:
+forcing `SWIFT_VERSION=5` made pinned Jinja 2.3.5
+(`0aeefadec459ce8e11a333769950fb86183aca43`) fail parsing bare-slash regular
+expressions in `Filters.swift` and `Template.swift`. Its manifest uses Swift 6
+package tools and declares macOS 13. Its own settings can coexist with the
+SayStone app's Swift 5/macOS 15 settings.
+
+Native CI first runs `build-for-testing` with manual ad-hoc signing and no team
+certificate. Xcode signs the host and test products while retaining the app's
+declared entitlements. The existing framework repair helper then fixes only the
+generated Development app's `CTranscribe.framework`, signs with identity `-`,
+and checks `codesign --verify --deep --strict` before any host launches. Starting
+with signing disabled would leave no existing app entitlements for the helper
+to preserve when it enables hardened runtime. In particular, the inherited
+disable-library-validation entitlement supports loading test code.
+[Apple's library-validation documentation](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.cs.disable-library-validation)
+describes that runtime requirement.
+
+The test phase runs `test-without-building` against the exact `.xctestrun`
+produced by that build, preserving repaired products rather than rebuilding
+them. CI validates that the manifest names the Development host, its
+`--ui-testing` startup argument, and the compiled Development UI-test target.
+Execution uses explicit hosted-unit filters and disables parallel testing.
+Build and test phases have separate logs and `.xcresult` bundles;
+repair/verification logs are retained too. These split actions follow
+[Apple's command-line testing workflow](https://developer.apple.com/library/archive/technotes/tn2339/_index.html).
+An ad-hoc CI signature verifies generated structure and integrity; it does not
+establish installed Developer ID/notarization acceptance, stable daily-app
+permissions, or real microphone/hotkey/paste behavior. Hosted execution remains
+pending until an authorized push/dispatch produces a passing receipt.
+
+The local ad-hoc check built both test targets, repaired the framework, passed
+strict deep verification, retained disable-library-validation, and completed
+the 48 selected hosted units. macOS then rejected the exact generated UI-runner
+executable through AMFI with `Code=-423`, "The file is adhoc signed or signed
+by an unknown certificate chain". The UI runner's own strict signature check
+passed; integrity verification did not establish launch trust. That combined
+attempt was stopped and does not count as an ad-hoc UI-test pass.
+A separate hosted-unit-only invocation then completed successfully with all 48
+tests and zero failures in `/tmp/SayStone-Utilities-AdHocUnits.xcresult`, matching
+the final CI execution filters. The successful build receipt is
+`/tmp/SayStone-Utilities-AdHocBuildFixed.xcresult`.
+
+CI therefore compiles UI tests and executes the 48 hosted units with ad-hoc
+products. Native UI execution requires a trusted Apple Development identity;
+the locally signed candidate passed all four UI smoke tests and the same 48
+selected units. Keep that signed native UI run as an adoption/release gate.
+CI does not add signing secrets or certificates, and does not disable AMFI,
+SIP, TCC or other platform security to run UI tests.
 
 Strict SwiftLint remains a separate check using the inherited rules. The native
 build runs independently so existing lint debt cannot suppress compilation

@@ -3,8 +3,9 @@
 Date: 2026-10-10. Checkout:
 `/Users/colsenmangeris/SayStone-worktrees/mac-workflows`, branch
 `feat/mac-workflows`. The isolation baseline is commit `3b4a14b`.
-Use this document together with the final local Git commit and test receipts;
-implemented features are distinct from real-device acceptance.
+The feature implementation is commit `5dcfe4e`; subsequent local commits contain
+final permission guidance, CI verification and these acceptance receipts.
+Implemented features are distinct from real-device acceptance.
 
 ## Runnable development app
 
@@ -64,14 +65,14 @@ native Xcode CLI builds and XCTest supplied the build/test evidence.
   provider choices and microphone settings are retained.
 - Development-only synthetic startup, stable accessibility IDs and native
   smoke tests make the new surfaces testable. CI runs isolated fixtures and
-  selected safe native tests, preserves results and pins its reviewed MLX plugin
-  exception. Strict lint's 52 inherited findings were fixed without broad rule
+  selected safe hosted units, compiles UI tests, preserves results and pins its
+  reviewed MLX plugin exception. Strict lint's 52 inherited findings were fixed without broad rule
   suppression. The [fork policy](UPSTREAM-POLICY.md) requires explicit upstream
   review and adoption; no automatic merge or release was introduced.
 
 ## Validation receipts
 
-Final integrated native results are recorded below before handoff. Fixture and
+Integrated native results are recorded below. Fixture and
 build success do not prove microphone routing, macOS permission behavior,
 global hotkeys or cross-app delivery.
 
@@ -81,10 +82,25 @@ global hotkeys or cross-app delivery.
 | Affected speech/request/recovery regression fixtures | Passed; dictation API/cleanup, engine digests, profile protocol, MAI request encoding, recovery WAVs and audio-start deadlines |
 | Full strict SwiftLint 0.63.2 | Zero findings; `/tmp/saystone-swiftlint-root-latest.json` |
 | CI workflow syntax | Actionlint 1.7.12 passed; hosted jobs have not run |
-| Signed Development and test-target build | Final receipt pending integration below |
-| Strict deep signature | Final receipt pending integration below |
-| Four native utility smoke scenarios | Final receipt pending integration below |
-| Selected safe native unit tests | Final receipt pending integration below |
+| Signed Development and test-target build | Passed; `/tmp/saystone-utilities-candidate-build.log`, `/tmp/saystone-utilities-candidate-test-build.log` |
+| Strict deep signature | Passed after generated-framework repair; `/tmp/saystone-utilities-signature-repair-candidate.log` |
+| Four native utility smoke scenarios | All passed; `/tmp/SayStone-Utilities-Candidate.xcresult`, `/tmp/saystone-utilities-native-candidate.log` |
+| Selected safe native unit tests | 48 passed with zero failures in the same result bundle |
+| Local certificate-free CI path | Ad-hoc build/repair/strict verification and 48 hosted units passed; `/tmp/SayStone-Utilities-AdHocBuildFixed.xcresult`, `/tmp/SayStone-Utilities-AdHocUnits.xcresult` |
+
+The four UI cases cover palette search/transform and synthetic external-action
+denial, shortcut validation/conflicts, snippet create/edit/relaunch persistence
+with history off, and workflow transform/copy/relaunch persistence with explicit
+post-dictation selection. Literal inputs include straight quotes, double hyphens
+and two trailing spaces; tests compare actual editor and output values.
+
+The certificate-free check also verified the generated Development test-host
+paths, deterministic startup and retained library-validation entitlement.
+An attempted ad-hoc UI execution was stopped after macOS AMFI rejected the
+UI runner's launch (`Code=-423`), although its strict signature check passed.
+It is not a UI pass. CI compiles UI tests; their execution remains a signed
+local gate. The trusted Development-certificate run above passed all four.
+Hosted CI itself remains unexecuted because this branch has not been pushed.
 
 Native UI fixtures use a fresh UUID preferences domain and temporary utility
 folder, a named synthetic pasteboard and authored strings. Their startup skips
@@ -106,8 +122,9 @@ private dictation, clipboard history or credentials were inspected.
    named-shortcut output/cancellation, and repeat compatibility on macOS 15.
 4. Follow [CROSS-DEVICE-ACCEPTANCE.md](CROSS-DEVICE-ACCEPTANCE.md). The user has
    confirmed Mini/iPhone availability; read-only readiness is refreshed. The
-   exact installed Forge release source/auth bootstrap, selected initial profile
-   authority, narrow credentials, authorized seed/sync activation and physical
+   installed Forge release source and narrow auth issuer are now verified.
+   Operator/data-root confirmation, selected initial profile authority, narrow
+   credentials, authorized seed/sync activation and physical
    route/fallback/cancel/retry/restart/concurrency receipts remain outstanding.
    Keep NeMo and Qwen TTS through acceptance. Do not overwrite the shared profile
    with an empty development profile.

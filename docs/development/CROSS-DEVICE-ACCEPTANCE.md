@@ -21,9 +21,9 @@ branch `feat/shared-speech-server`, HEAD
 
 The local Forge checkout currently reports branch `wt/grid-into-forge`, HEAD
 `839ae71692fc64f11911da8014da63e1bb878a7d`; it is another owner's lane and is
-not proof of the installed Mini release's source revision. Do not edit that
-checkout or use it to mint credentials/deploy until its owning lane and the
-installed release's supported auth workflow have been reconciled.
+not proof of the installed Mini release's source revision. The release/source
+reconciliation below uses that checkout read-only at a pinned historical commit.
+Do not edit its working tree or use its current HEAD to mint credentials/deploy.
 
 Keep daily MacBook dictation local and usable offline. Native inference stays
 on the Macs; Akmon does not run SayStone. Tailscale is the phone's primary route,
@@ -40,9 +40,9 @@ task-specific activation authorization before the live profile stage.
 ## Confirmed current state
 
 Only public deployment metadata, health responses, signing assessments,
-listening ports, and existence metadata for the three known profile paths were
-inspected. No credentials, clipboard content, dictation history, profile
-payloads, SQLite receipts, or audio were read. No processes were started,
+listening ports, known installed-package metadata, and existence metadata for
+the three known profile paths were inspected. No credentials, clipboard content,
+dictation history, profile payloads, SQLite receipts, or audio were read. No processes were started,
 stopped, installed, updated or reconfigured.
 
 | Surface | Confirmed on this refresh | Acceptance meaning |
@@ -50,7 +50,7 @@ stopped, installed, updated or reconfigured.
 | MacBook daily SayStone | `127.0.0.1:47733/v1/health`: status `ok`, engine readiness `ready`, SayStone `1.6.10 (22)` | Existing daily engine is ready; this is not a new dictation or profile-convergence receipt. |
 | Mini host | Existing noninteractive SSH alias `mini` works; macOS `26.6.2`; Mini Tailscale peer is online | Host is reachable. No service mutation was needed. |
 | Mini SayStone | Installed daily bundle `com.FluidApp.app.debug`, version `1.6.10`, build `22`; strict deep signature verification passes; loopback health `ready` | Matches MacBook engine identity below. |
-| Mini Forge | Installed bundle `com.oikonomia.theforge`, version `0.0.91`; local `/api/health` is `ready`; strict deep signature verification passes | Historical `0.0.80` runtime state is superseded. Exact installed release source SHA still needs a release receipt. |
+| Mini Forge | Installed bundle `com.oikonomia.theforge`, version `0.0.91`; packaged `t3codeCommitHash` is `ff185ca7a56d`; local `/api/health` is `ready`; strict deep signature verification passes | Historical `0.0.80` runtime state is superseded. The packaged source prefix matches the pinned desktop release receipt below. |
 | Mini Forge signing | Developer ID Application signature present; Gatekeeper rejects with `source=Unnotarized Developer ID` | September's ad-hoc-signing diagnosis is superseded; notarization/Gatekeeper acceptance is still pending. |
 | Narrow profile auth | Unauthenticated `GET http://127.0.0.1:3774/api/speech/profile` returns `401` | Expected rejection proves the auth gate is mounted. It does not prove current saved credentials are invalid or valid. |
 | Tailscale Forge route | `https://colsens-mac-mini.tail306318.ts.net/api/health` returns `200`, `ready` | Primary private route reaches the current Forge backend. Authenticated phone speech remains untested. |
@@ -82,6 +82,69 @@ Both running SayStone health responses agree on:
 This verifies deployed engine parity, not shared profile state or identical
 recognition for untested audio.
 
+## Reconciled Forge release and narrow credential procedure
+
+The follow-up read-only probe inspected only `/Applications/The Forge.app`'s
+`Info.plist`, the ASAR archive header, and embedded public `package.json`.
+The installed metadata reports `name=theforge`, `version=0.0.91`, and
+`t3codeCommitHash=ff185ca7a56d`. The
+[0.0.91 desktop release receipt](/Users/colsenmangeris/oikonomos/docs/custom/handoffs/2026-10-03-release-0091.md)
+identifies the release bump; resolving it in the canonical repository gives
+**`ff185ca7a56dd2aa867ac6176378b8b9bcf5aae3`**. Its recorded delivered ZIP SHA-256
+is `8bc2a8bcedb0f17478cfc9cf832cb23ef28814d617d9adc30193f879450e066a`.
+That ZIP hash comes from the release receipt; this refresh did not hash a new
+archive or reinstall it. The installed prefix agrees with the full receipt SHA.
+
+Source inspected with `git show` at that full SHA establishes:
+
+| Pinned source | Supported behavior |
+| --- | --- |
+| `apps/server/src/cli/auth.ts` | `auth speech issue` creates a revocable bearer session with exactly `speech:operate`; supports `--base-dir`, `--ttl`, `--label`, `--subject`, `--token-only`, and `--json`. Generic `auth session issue` grants administrative scopes; generic `auth pairing create` grants standard client scopes. |
+| `apps/server/src/cli/config.ts` | `--base-dir` selects the Forge data root; state is below `userdata`. Duration values such as `1h` and `30d` are supported. |
+| `apps/server/src/cliAuthFormat.ts` | `--token-only` prints only the secret. `--json` on issuance includes the secret too. `auth session list --json` omits bearer tokens and reports session IDs/scopes/expiry; `auth session revoke <session-id>` revokes the selected session. |
+| `apps/server/src/auth/SessionStore.ts` | Bearer sessions default to 30 days when TTL is omitted. Choose an explicit agreed lifetime for acceptance instead. |
+| `apps/server/src/speech/SpeechProfileRoute.ts`, `SpeechWebSocketRoute.ts` | Both narrow speech surfaces require `speech:operate`. |
+| `apps/desktop/src/app/DesktopEnvironment.ts`, `backend/DesktopBackendConfiguration.ts` | The packaged macOS app runs its embedded server with `ELECTRON_RUN_AS_NODE=1`; macOS uses `app.asar`, whereas the separate `server.asar` path is for Windows. |
+
+Public archive metadata also confirms the installed CLI entry
+`/Applications/The Forge.app/Contents/Resources/app.asar/apps/server/dist/bin.mjs`
+exists, and `Info.plist` names executable
+`/Applications/The Forge.app/Contents/MacOS/The Forge`. These paths and the source
+are verified; the CLI was **not invoked** and no credential was created.
+[Electron's ASAR reader](https://github.com/electron/asar/blob/main/src/disk.ts)
+defines the bounded archive-header/package-metadata read used for this probe.
+
+The next authorized credential stage can use the installed revision directly,
+without building or running another owner's checkout:
+
+1. Confirm the operator and the active Mini backend's data root. The documented
+   default is `~/.oikonomia/theforge`; existence or a default in source does not
+   prove the running environment has no override. Passing the wrong `--base-dir`
+   could issue a credential for a different state store.
+2. Under a reviewed secret channel, invoke the installed executable with
+   `ELECTRON_RUN_AS_NODE=1`, the embedded CLI entry above, and
+   `auth speech issue --base-dir <confirmed-root> --ttl <agreed-duration>
+   --label <client-label> --subject <client-subject> --token-only`.
+   Make one credential per intended MacBook/Mini client. Redirect stdout
+   directly to a process-owned channel or new private `0600` importer file under
+   `umask 077`; do not display or capture it in tool logs. Token values never
+   belong in arguments, URLs, shell tracing, defaults, or repository receipts.
+3. Deliver each credential to its selected app's existing importer location
+   described below, using an authenticated secret channel. Import occurs on the
+   next separately authorized app launch; successful Keychain import consumes
+   and removes the file. Import and profile activation are separate operations.
+4. Capture only that client's sanitized session ID, scope, label/subject,
+   expiry, target environment, and source SHA. The token-free session list and
+   exact-session revoke commands provide a revocation path. Exercise anonymous,
+   wrong-scope, and fresh speech-scope requests before enabling profile sync.
+
+The HTTP alternative at this pinned revision is an authenticated
+`POST /api/auth/pairing-token` with explicit `scopes: ["speech:operate"]`;
+it requires an operator with `access:write` and those delegated scopes. Omitting
+`scopes` selects the broader standard client scopes. Its one-time bootstrap is
+exchanged at `/oauth/token`. No operator credential or binding was inspected,
+so this alternative is source-confirmed and unexercised here.
+
 ## Historical evidence and current unknowns
 
 The last committed phone Preview receipt in the canonical checkout is
@@ -100,12 +163,22 @@ reproduction of saved-token failure. No fresh authenticated profile request,
 speech session, receipt replay, pronunciation transfer or phone utterance has
 been run during this readiness refresh.
 
+The desktop 0.0.91 receipt also points to a later
+[Production phone receipt](/Users/colsenmangeris/oikonomos/docs/custom/mobile-release-receipts/production/0.0.91-20261006.155415-47073a5a9189.json):
+bundle `com.oikonomia.theforge`, version `0.0.91`, build `20261006.155415`, source
+`47073a5a9189590137c61b8631a118a205db6f19`, historically installed and launched on
+October 6. This is separate from desktop SHA `ff185ca7a56d` and Preview SHA
+`99d3365b422f`. The timed-out fresh Production metadata query leaves its current
+installation unconfirmed; the historical receipt does not resolve that gap.
+
 ## Required inputs for the next authorized stage
 
 Before performing activation, assemble the following concrete inputs:
 
-1. The supported auth/bootstrap procedure for the current installed Mini Forge
-   release, its exact source SHA, operator identity and target Mini environment.
+1. Operator identity and confirmation of the active Mini environment/data root.
+   The installed release/source mapping and supported narrow issuer are now
+   reconciled above; executing them and testing authenticated access remain
+   pending.
 2. Separate narrowly scoped `speech:operate` credentials for the intended MacBook
    and Mini clients, including agreed lifetime/revocation. Never print token
    strings or pass them in shell command arguments, URLs, defaults or receipts.

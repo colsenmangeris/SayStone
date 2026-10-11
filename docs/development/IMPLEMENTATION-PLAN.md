@@ -69,10 +69,22 @@ Xcode builds and generated-framework repair are serialized by root.
   SwiftLint 0.63.2 passes after mechanical cleanup of the initial 52 baseline
   violations. The CI workflow passes Actionlint; hosted execution awaits an
   authorized push.
-- Final signed build, native smoke results and real microphone/permission/
-  cross-app/device receipts belong to root's integrated validation record.
-  Fixture results do not establish those native behaviors. Cross-device
-  acceptance remains documented separately in CROSS-DEVICE-ACCEPTANCE.md.
+- Signed Development and test-target builds passed. After generated-framework
+  repair, strict deep signature verification passed. All four native utility
+  smoke scenarios and 48 selected safe hosted unit tests passed with zero
+  failures in `/tmp/SayStone-Utilities-Candidate.xcresult`. Native tests check
+  rendered values, literal text preservation and same-session relaunch
+  persistence. Details and runnable app location are in MAC-UTILITIES-STATUS.md.
+  Real microphone/permission/cross-app/device acceptance remains outstanding;
+  fixtures and synthetic startup do not establish those behaviors.
+  CROSS-DEVICE-ACCEPTANCE.md records current Mini/iPhone readiness and the
+  verified installed Forge release/source and narrow credential issuer.
+- The local certificate-free CI command sequence also passed: ad-hoc native
+  build, framework repair, strict deep verification and 48 selected hosted
+  units (`/tmp/SayStone-Utilities-AdHocUnits.xcresult`). CI preserves package
+  language modes and compiles UI tests; macOS AMFI rejected the ad-hoc UI
+  runner's launch. Signed UI execution remains a local gate and already passed
+  above. Platform security was not disabled and no signing secrets were added.
 
 ## Boundaries
 

@@ -151,6 +151,10 @@ final class MacUtilityCoordinator: ObservableObject {
 
     private func paste(_ text: String) async throws {
         try self.requireExternalExecution()
+        guard AXIsProcessTrusted() else {
+            let appName = AppStorage.isDevelopment ? "SayStone Development" : "SayStone"
+            throw UtilityActionError.invalidInput("Allow \(appName) in System Settings → Privacy & Security → Accessibility, then select the target field and try again.")
+        }
         guard let target = self.target, target.pid != ProcessInfo.processInfo.processIdentifier else {
             throw UtilityActionError.targetChanged
         }
