@@ -173,7 +173,15 @@ import XCTest
         // SwiftUI TextEditor exposes a native TextView without a stable scroll
         // identity in this SDK. Click its locator-derived visible point directly
         // rather than invoking XCTest's failing implicit scroll-to-visible path.
-        element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        if element.elementType == .textView {
+            element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        } else {
+            element.click()
+        }
+        guard element.waitForExistence(timeout: 3) else {
+            XCTFail("The authored input field disappeared after focusing it.")
+            return
+        }
         app.typeKey("a", modifierFlags: .command)
         app.typeText(text)
         await assertValue(text, of: element)

@@ -86,12 +86,12 @@ build products. Do not copy over the daily installed app as part of setup.
 The shared scheme includes `FluidDictationIntegrationTests`, using the
 Development host and its separate data. Tests launch the host application, so
 inspect their effects before running them. Compilation alone is available with
-`build-for-testing`. To execute authorized tests:
+`build-for-testing`. Compile test products without executing unreviewed suites:
 
 ```sh
-xcodebuild test -project SayStone.xcodeproj -scheme SayStone \
+xcodebuild build-for-testing -project SayStone.xcodeproj -scheme SayStone \
   -configuration Development \
-  -destination 'platform=macOS'
+  -destination 'platform=macOS' -derivedDataPath DerivedData
 ```
 
 ## Mac utilities and safe fixtures
@@ -115,6 +115,27 @@ test session under `/tmp/SayStone-UITests/<UUID>`. External actions are rejected
 in this mode. The shared scheme supplies `--ui-testing` for the native unit-test
 host as well. Avoid running unreviewed integration suites merely because their
 host is isolated; tests can still have their own external effects.
+
+The CI workflow lists the reviewed safe hosted-unit filters; native UI checks
+add the `SayStoneUITests` target. Repair and strictly verify the generated host
+after `build-for-testing` and before `test-without-building`. A trusted installed
+Development signing identity is needed for local UI runner launch.
+
+Authored speech acceptance is a separate opt-in. After compiling test products
+and repairing the host, use:
+
+```sh
+bash scripts/local/run-authored-speech-acceptance.sh --provider whisper --download-models
+```
+
+This uses the repository's authored WAV twice, a fresh test-preferences suite
+and private Development model storage. It does not capture microphone audio or
+start shared services. Omit `--download-models` to use only existing isolated
+models. `--provider parakeet` selects base TDT v2 recognition, with at least 8 GB
+free required before a missing-model download. Missing model permission or
+insufficient space produces an explicit skipped test, not a speech pass.
+Vocabulary-boosted recognition has a pinned dependency cache-path limitation;
+see [FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md).
 
 See [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for validation evidence and
 [CROSS-DEVICE-ACCEPTANCE.md](CROSS-DEVICE-ACCEPTANCE.md) for remaining device work.
