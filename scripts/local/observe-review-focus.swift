@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 
 // Read-only launch/focus receipt. Records no window text, user input or clipboard.
@@ -8,11 +9,9 @@ guard arguments.count == 3, let duration = Double(arguments[2]), duration > 0, d
     fatalError("Usage: observe-review-focus <new-private-jsonl-file> <seconds-up-to-1800>")
 }
 let output = URL(fileURLWithPath: arguments[1])
-guard !FileManager.default.fileExists(atPath: output.path) else { fatalError("Receipt already exists") }
-guard FileManager.default.createFile(atPath: output.path, contents: nil, attributes: [.posixPermissions: 0o600]) else {
-    fatalError("Could not create private receipt")
-}
-let file = try FileHandle(forWritingTo: output)
+let descriptor = open(output.path, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR)
+guard descriptor >= 0 else { fatalError("Could not exclusively create private receipt") }
+let file = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
 defer { try? file.close() }
 let workspace = NSWorkspace.shared
 let targetIdentifier = "com.architech.saystone.development"
@@ -42,14 +41,16 @@ func record(_ event: String, activated: NSRunningApplication? = nil) {
     } catch { fatalError("Could not persist focus receipt: \(error)") }
 }
 
-record("started")
 let observer = workspace.notificationCenter.addObserver(
     forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
 ) { notification in
     record("activation", activated: notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
 }
 let timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in record("poll") }
+// This is the launch-ready signal: the activation observer is already installed.
+record("started")
 RunLoop.main.run(until: Date().addingTimeInterval(duration))
 timer.invalidate()
 workspace.notificationCenter.removeObserver(observer)
 record("finished")
+if targetEverFrontmost { exit(2) }
