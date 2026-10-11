@@ -22,9 +22,9 @@ enum EngineIdentityReader {
 
     static func current() -> EngineIdentity {
         let model = SettingsStore.shared.selectedSpeechModel
-        let info = Bundle.main.infoDictionary
-        let buildVersion = info?["CFBundleShortVersionString"] as? String
-        let buildNumber = info?["CFBundleVersion"] as? String
+        let info = Bundle.main.infoDictionary ?? [:]
+        let buildVersion = info["CFBundleShortVersionString"] as? String
+        let buildNumber = info["CFBundleVersion"] as? String
         let saystoneBuild: String? = {
             switch (buildVersion, buildNumber) {
             case let (version?, number?): return "\(version) (\(number))"
@@ -69,15 +69,15 @@ enum EngineIdentityReader {
         )
     }
 
-    private static func string(_ info: [String: Any]?, key: String) -> String? {
-        guard let value = info?[key] as? String else { return nil }
+    private static func string(_ info: [String: Any], key: String) -> String? {
+        guard let value = info[key] as? String else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.contains("$(") else { return nil }
         return trimmed
     }
 
-    private static func integer(_ info: [String: Any]?, key: String) -> Int? {
-        if let number = info?[key] as? NSNumber { return number.intValue }
+    private static func integer(_ info: [String: Any], key: String) -> Int? {
+        if let number = info[key] as? NSNumber { return number.intValue }
         guard let value = self.string(info, key: key) else { return nil }
         return Int(value)
     }

@@ -30,9 +30,19 @@ struct FluidApp: App {
     var body: some Scene {
         WindowGroup(id: "main") {
             AdaptiveAppTheme(accent: self.settings.accentColor) {
-                ContentView()
-                    .environmentObject(self.menuBarManager)
-                    .environmentObject(self.appServices)
+                if DevelopmentRuntime.isUITesting {
+                    UtilityWorkspaceView(coordinator: MacUtilityCoordinator.shared)
+                        .onAppear {
+                            DispatchQueue.main.async {
+                                NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main-") == true })?.makeKeyAndOrderFront(nil)
+                                NSApp.activate(ignoringOtherApps: true)
+                            }
+                        }
+                } else {
+                    ContentView()
+                        .environmentObject(self.menuBarManager)
+                        .environmentObject(self.appServices)
+                }
             }
         }
         .defaultSize(width: 1000, height: 700)
@@ -42,6 +52,12 @@ struct FluidApp: App {
                     self.menuBarManager.openPreferencesFromUI()
                 }
                 .keyboardShortcut(",", modifiers: .command)
+            }
+            CommandMenu("Utilities") {
+                Button("Command Palette…") { MacUtilityCoordinator.shared.show() }
+                Button("Clipboard Library…") { MacUtilityCoordinator.shared.show(tab: "clipboard") }
+                Button("Workflows…") { MacUtilityCoordinator.shared.show(tab: "workflows") }
+                Button("Utility Shortcuts…") { MacUtilityCoordinator.shared.show(tab: "shortcuts") }
             }
         }
     }

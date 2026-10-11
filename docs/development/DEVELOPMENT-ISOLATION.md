@@ -82,10 +82,14 @@ Build logs are local:
 
 ## Remaining native acceptance
 
-Neither the daily app nor the development app was launched for this work.
-The daily installation at `~/Applications/SayStone.app` was not replaced.
+The Development app has since been launched for native utility smoke tests with
+the synthetic startup documented in START-HERE.md. It uses a separate test
+preferences domain, temporary utility data and named pasteboard, and skips
+audio/models, Keychain, analytics, API/profile services and clipboard polling.
+The daily installation at `~/Applications/SayStone.app` was not replaced or
+reconfigured.
 No daily settings or history were inspected or copied, and no shared-speech
-service was enabled. Full hosted test execution, native microphone routing,
+service was enabled. Hosted CI execution, native microphone routing,
 hotkeys, development permissions, cross-app paste and cross-device behavior
 remain unverified. Test those using authored audio/text and synthetic clipboard
 fixtures, with the Development configuration.

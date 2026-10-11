@@ -587,6 +587,17 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
         menu.addItem(copyLastTranscriptItem)
         self.copyLastTranscriptMenuItem = copyLastTranscriptItem
 
+        for (title, selector) in [
+            ("Paste as Plain Text", #selector(pastePlainText(_:))),
+            ("Command Palette…", #selector(openUtilityPalette(_:))),
+            ("Clipboard Library…", #selector(openClipboardLibrary(_:))),
+            ("Workflows…", #selector(openUtilityWorkflows(_:)))
+        ] {
+            let item = NSMenuItem(title: title, action: selector, keyEquivalent: "")
+            item.target = self
+            menu.addItem(item)
+        }
+
         menu.addItem(.separator())
 
         // Open Main Window
@@ -768,16 +779,18 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
     }
 
     @objc private func copyLastTranscript(_ sender: Any?) {
-        guard self.canCopyLastTranscript,
-              let text = TranscriptionHistoryStore.shared.latestClipboardText
-        else {
-            DebugLogger.shared.info("Menu action: Copy last transcript requested but history is empty", source: "MenuBarManager")
-            return
-        }
-
-        _ = ClipboardService.copyToClipboard(text)
-        DebugLogger.shared.info("Menu action: Copied latest transcription to clipboard", source: "MenuBarManager")
+        guard self.canCopyLastTranscript else { return }
+        MacUtilityCoordinator.shared.perform(.init(id: .copyLatestTranscript))
     }
+
+    @objc private func pastePlainText(_ sender: Any?) {
+        guard !self.isProcessingActive, !self.isRecording else { return }
+        MacUtilityCoordinator.shared.perform(.init(id: .pastePlainText), captureTarget: true)
+    }
+
+    @objc private func openUtilityPalette(_ sender: Any?) { MacUtilityCoordinator.shared.show() }
+    @objc private func openClipboardLibrary(_ sender: Any?) { MacUtilityCoordinator.shared.show(tab: "clipboard") }
+    @objc private func openUtilityWorkflows(_ sender: Any?) { MacUtilityCoordinator.shared.show(tab: "workflows") }
 
     @objc private func selectMicrophone(_ sender: NSMenuItem) {
         guard self.isRecording == false else { return }
@@ -1025,6 +1038,10 @@ final class MenuBarManager: NSObject, ObservableObject, NSMenuDelegate {
 
     /// Create and present a fresh main window hosting `ContentView`
     private func createAndShowMainWindow() {
+        if DevelopmentRuntime.isUITesting {
+            MacUtilityCoordinator.shared.show(captureTarget: false)
+            return
+        }
         // Build the SwiftUI root view with required environment
         let rootView = AdaptiveAppTheme(accent: SettingsStore.shared.accentColor) {
             ContentView()

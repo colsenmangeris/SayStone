@@ -28,7 +28,7 @@ final class SettingsStore: ObservableObject {
     private static let privateAIDenseBytesPerToken = 2
     static let privateAIBackendPreferenceDefaultsKey = "FluidIntelligenceBackendPreference"
     private static let forcedOnboardingResetIntroducedAt = Date(timeIntervalSince1970: 1_782_091_732)
-    private let defaults = UserDefaults.standard
+    private let defaults = DevelopmentRuntime.settingsDefaults
     private let keychain = KeychainService.shared
     private(set) var launchAtStartupEnabled = false
     private(set) var launchAtStartupErrorMessage: String?
@@ -36,6 +36,7 @@ final class SettingsStore: ObservableObject {
         "FluidVoice reflects the actual macOS login item state. Unsigned or development builds may fail to enable this."
 
     private init() {
+        guard !DevelopmentRuntime.isUITesting else { return }
         self.migrateTranscriptionStartSoundIfNeeded()
         self.ensureDebugLoggingDefaults()
         self.migrateProviderAPIKeysIfNeeded()

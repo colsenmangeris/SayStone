@@ -4,11 +4,16 @@ import Foundation
 nonisolated enum FailedDictationRecovery {
     static func save(samples: [Float], directory: URL? = nil) throws -> URL {
         let folder = try directory ?? AppStorage.url(
-            for: .applicationSupportDirectory, in: .userDomainMask,
-            appropriateFor: nil, create: true
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
         ).appendingPathComponent("SayStone/Recovery", isDirectory: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true,
-                                               attributes: [.posixPermissions: 0o700])
+        try FileManager.default.createDirectory(
+            at: folder,
+            withIntermediateDirectories: true,
+            attributes: [.posixPermissions: 0o700]
+        )
         let url = folder.appendingPathComponent("Latest Failed Dictation.wav")
         var data = Data()
         func string(_ value: String) { data.append(contentsOf: value.utf8) }

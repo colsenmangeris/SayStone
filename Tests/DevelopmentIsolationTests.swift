@@ -48,7 +48,9 @@ import Foundation
         let plist: [String: Any] = ["CFBundleIdentifier": "com.FluidApp.app.debug", "CFBundlePackageType": "APPL"]
         try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
             .write(to: contents.appendingPathComponent("Info.plist"))
-        let foreignBundle = Bundle(url: foreignBundleURL)!
+        guard let foreignBundle = Bundle(url: foreignBundleURL) else {
+            preconditionFailure("The authored foreign-app fixture could not be loaded as a bundle.")
+        }
 
         #if SAYSTONE_DEVELOPMENT
         precondition(AppStorage.isDevelopment)

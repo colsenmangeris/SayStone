@@ -24,6 +24,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if DevelopmentRuntime.isUITesting {
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
         // Bring up file logging + crash handlers immediately during launch.
         _ = FileLogger.shared
         TypingService.startKeyboardLayoutTracking()
@@ -42,6 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         // Initialize app settings (dock visibility, etc.)
         SettingsStore.shared.initializeAppSettings()
+        MacUtilityCoordinator.shared.start()
         LocalAPIServer.shared.start()
         DispatchQueue.global(qos: .utility).async {
             self.importSpeechProfileCredentialIfPresent()
@@ -97,6 +103,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if DevelopmentRuntime.isUITesting { return .terminateNow }
         Task { @MainActor in
             await TranscriptionHistoryStore.shared.finishPendingWrites()
             if let error = TranscriptionHistoryStore.shared.persistenceError {
@@ -114,6 +121,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        MacUtilityCoordinator.shared.stop()
+        guard !DevelopmentRuntime.isUITesting else { return }
         DebugLogger.shared.info("Application will terminate", source: "AppDelegate")
         self.shutdownPrivateAIRuntimeForTermination()
         self.shutdownASRRuntimeForTermination()
@@ -165,6 +174,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if DevelopmentRuntime.isUITesting { return true }
         if self.shouldSuppressNextReopenActivation {
             self.shouldSuppressNextReopenActivation = false
             return true
@@ -179,6 +189,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        guard !DevelopmentRuntime.isUITesting else { return }
         DispatchQueue.global(qos: .utility).async {
             try? KeychainService.shared.refreshCachedKeys()
         }

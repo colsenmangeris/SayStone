@@ -47,8 +47,7 @@ final class AudioStartupDeadline {
                 pending?.resume(with: result)
             }
             timer = Task { @MainActor in
-                do { try await Task.sleep(nanoseconds: timeoutNanoseconds) }
-                catch { return }
+                do { try await Task.sleep(nanoseconds: timeoutNanoseconds) } catch { return }
                 abandon(with: Failure.timedOut)
             }
         }

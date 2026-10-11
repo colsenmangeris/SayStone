@@ -56,7 +56,8 @@ nonisolated enum AppStorage {
         let directoryURL = urls(for: directory, in: domain)[0]
         if create {
             try FileManager.default.createDirectory(
-                at: directoryURL, withIntermediateDirectories: true,
+                at: directoryURL,
+                withIntermediateDirectories: true,
                 attributes: [.posixPermissions: 0o700]
             )
         }

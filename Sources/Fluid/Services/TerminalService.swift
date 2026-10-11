@@ -69,22 +69,9 @@ final class TerminalService {
         workingDirectory: String? = nil,
         timeout: TimeInterval = 30
     ) async -> CommandResult {
-        let startTime = Date()
-
-        let process = Process()
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
-
-        // Use zsh (default macOS shell)
-        process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        process.arguments = ["-c", command]
-
-        // Set working directory
-        if let dir = workingDirectory, !dir.isEmpty {
-            process.currentDirectoryURL = URL(fileURLWithPath: dir)
-        } else {
-            process.currentDirectoryURL = FileManager.default.homeDirectoryForCurrentUser
-        }
+        let startedAt = ProcessInfo.processInfo.systemUptime
+        let directory = workingDirectory.flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+            ?? FileManager.default.homeDirectoryForCurrentUser
 
         // Inherit user's environment (PATH, etc.)
         var environment = ProcessInfo.processInfo.environment
@@ -92,51 +79,47 @@ final class TerminalService {
         if let path = environment["PATH"] {
             environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:\(path)"
         }
-        process.environment = environment
-
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
-
         do {
-            try process.run()
-
-            // Wait with timeout
-            let timeoutTask = Task {
-                try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-                if process.isRunning {
-                    process.terminate()
-                }
+            // This remains the separately confirmed advanced shell tool. Ordinary utility
+            // actions use typed requests and selected executables instead of shell source.
+            let result = try await UtilityProcessRunner.run(
+                executableURL: URL(fileURLWithPath: "/bin/zsh"),
+                arguments: ["-c", command],
+                workingDirectory: directory,
+                environment: environment,
+                timeout: timeout,
+                maxOutputBytes: 65_536
+            )
+            var output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+            if result.outputTruncated {
+                output += "\n[Command output was truncated at 65,536 bytes per stream.]"
             }
-
-            process.waitUntilExit()
-            timeoutTask.cancel()
-
-            let outputData = outputPipe.fileHandleForReading.readDataToEndOfFile()
-            let errorData = errorPipe.fileHandleForReading.readDataToEndOfFile()
-
-            let output = String(data: outputData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let errorOutput = String(data: errorData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
-
-            let executionTime = Int(Date().timeIntervalSince(startTime) * 1000)
-
+            let errorOutput = result.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
             return CommandResult(
-                success: process.terminationStatus == 0,
+                success: result.succeeded,
                 command: command,
                 output: output,
-                error: errorOutput?.isEmpty == true ? nil : errorOutput,
-                exitCode: process.terminationStatus,
-                executionTimeMs: executionTime
+                error: errorOutput.isEmpty ? nil : errorOutput,
+                exitCode: result.exitCode,
+                executionTimeMs: Int(result.executionTime * 1_000)
             )
-
+        } catch is CancellationError {
+            return CommandResult(
+                success: false,
+                command: command,
+                output: "",
+                error: "Command cancelled.",
+                exitCode: -2,
+                executionTimeMs: Int((ProcessInfo.processInfo.systemUptime - startedAt) * 1_000)
+            )
         } catch {
-            let executionTime = Int(Date().timeIntervalSince(startTime) * 1000)
             return CommandResult(
                 success: false,
                 command: command,
                 output: "",
                 error: "Failed to execute: \(error.localizedDescription)",
                 exitCode: -1,
-                executionTimeMs: executionTime
+                executionTimeMs: Int((ProcessInfo.processInfo.systemUptime - startedAt) * 1_000)
             )
         }
     }

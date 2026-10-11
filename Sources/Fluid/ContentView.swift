@@ -625,6 +625,10 @@ struct ContentView: View {
 
     private func handleContentAppear() {
         self.appear = true
+        guard !DevelopmentRuntime.isUITesting else {
+            self.selectedSidebarItem = .welcome
+            return
+        }
         self.refreshAccessibilityPermissionState()
 
         Task {
@@ -2688,6 +2692,12 @@ struct ContentView: View {
             return
         }
 
+        if route == .normal,
+           MacUtilityCoordinator.shared.runVoiceWorkflowIfMatched(transcribedText, target: self.recordingFocusTarget) {
+            await self.menuBarManager.finishProcessingAndHideOverlay()
+            return
+        }
+
         var finalText: String
         var aiFallbackReason: String?
         var postProcessingModel: String?
@@ -2880,6 +2890,19 @@ struct ContentView: View {
                 timestamp: historyTimestamp,
                 model: transcriptionModelInfo.model
             )
+        }
+        if shouldPersistOutputs, !sendsExistingDraft,
+           await MacUtilityCoordinator.shared.runDictationWorkflowIfSelected(finalText, target: self.recordingFocusTarget) {
+            // The workflow owns its delivery steps. Keep the recognized output
+            // in the editor/history even if a later step fails or is cancelled.
+            await self.menuBarManager.finishProcessingAndHideOverlay()
+            self.logPipelineCompletion(
+                outcome: "utility_workflow",
+                pipelineID: pipelineID,
+                pipelineStartedAt: pipelineStartedAt,
+                textReadyAt: finalTextReadyAt
+            )
+            return
         }
         // When FluidVoice itself is frontmost, the bound editor already receives `finalText`.
         // Avoid re-inserting or overwriting the clipboard in that self-target case.
@@ -4291,9 +4314,14 @@ struct ContentView: View {
                 self.activeRecordingMode == .edit
             },
             isShortcutCaptureActiveProvider: {
-                self.isRecordingAnyShortcutCapture
+                self.isRecordingAnyShortcutCapture || MacUtilityCoordinator.shared.isRecordingShortcut
             }
         )
+
+        self.hotkeyManager?.setUtilityShortcutHandler { keyCode, modifiers, isRepeat in
+            guard !self.asr.isRunning, !self.asr.isStarting, !NotchContentState.shared.isProcessing else { return false }
+            return MacUtilityCoordinator.shared.handleShortcut(keyCode: keyCode, modifiers: modifiers, isRepeat: isRepeat)
+        }
 
         self.hotkeyManagerInitialized = self.hotkeyManager?.validateEventTapHealth() ?? false
 
@@ -4303,6 +4331,11 @@ struct ContentView: View {
         // Returns true if it handled something (so GlobalHotkeyManager knows to consume the event)
         self.hotkeyManager?.setCancelCallback {
             var handled = false
+
+            if MacUtilityCoordinator.shared.workflowRunner.state.isRunning {
+                MacUtilityCoordinator.shared.workflowRunner.cancel()
+                return true
+            }
 
             // The suggestion panel is non-activating, so its Escape key arrives
             // through the global event tap while the target app stays focused.

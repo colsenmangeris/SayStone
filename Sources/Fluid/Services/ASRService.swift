@@ -2093,8 +2093,11 @@ final class ASRService: ObservableObject {
             self.errorTitle = "Microphone Recovering"
             self.errorMessage = message
             self.showError = true
-            NotificationCenter.default.post(name: NSNotification.Name("ASRServiceStartFailed"), object: nil,
-                                            userInfo: ["errorMessage": message])
+            NotificationCenter.default.post(
+                name: NSNotification.Name("ASRServiceStartFailed"),
+                object: nil,
+                userInfo: ["errorMessage": message]
+            )
             return .failed
         }
         self.audioCaptureStartGeneration &+= 1

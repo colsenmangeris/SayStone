@@ -1,0 +1,116 @@
+# SayStone fork updates and acceptance
+
+The personal fork is `colsenmangeris/SayStone`; the upstream source is
+`altic-dev/FluidVoice`. The feature checkout is
+`/Users/colsenmangeris/SayStone-worktrees/mac-workflows` on `feat/mac-workflows`.
+The recovery and shared-speech worktrees have separate owners and purposes.
+An upstream change is a candidate until reviewed and accepted locally.
+
+## Review without changing the active app
+
+1. Check the selected checkout's branch and Git status. Record its HEAD and the
+   current `SayStone.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`.
+   Leave unrelated local changes in their owner's checkout.
+2. Fetch upstream refs only when a review is requested, recording the exact
+   commit SHA. Fetching updates Git refs; it does not install or release an app.
+   Inspect source, dependency pins, licensing, migrations and release notes.
+3. Create a separate review worktree from the accepted personal baseline. Apply
+   only the requested candidate commits there. Resolve conflicts explicitly,
+   preserving SayStone's identity, tagline, providers, Keychain names and daily
+   settings/storage keys. Keep Swift 5 mode and macOS 15 unless separately
+   authorized to change compatibility.
+4. Use the isolated Development configuration for builds and native tests.
+   Re-review changed package plugins before trusting them. CI's per-invocation
+   MLX plugin allowance is limited to the pinned revision recorded in the
+   workflow; changing its pin requires reviewing that plugin and updating the
+   allowance deliberately. Do not set a global plugin-trust preference.
+5. Record the candidate SHA, changed pins, conflicts, validation evidence and
+   unresolved acceptance checks. Merging, pushing, replacing the daily app,
+   enabling shared speech and releasing require their own task authorization.
+
+Use `gh-axi` with `-R colsenmangeris/SayStone` for personal-fork operations;
+the CLI's repository inference can otherwise select the inherited upstream.
+Register any PR being worked on with the T3 thread's PR-linking tool. No
+automatic upstream merge or release is configured here.
+
+## Local and hosted checks
+
+Run the self-contained fixture entrypoint from this checkout:
+
+```sh
+bash scripts/local/run-mac-utility-fixtures.sh
+```
+
+It runs development-storage boundaries, typed actions/subprocesses, clipboard
+privacy/retention, workflow propagation/cancellation/deadlines and utility
+shortcut-conflict fixtures. Each uses authored data, temporary files or uniquely
+named pasteboards. It does not read personal dictation or the general clipboard
+and does not launch the installed daily app.
+
+`.github/workflows/build.yml` runs on `main` and `feat/mac-workflows` pushes,
+non-draft PR updates against those branches, and manual dispatch. Build-affecting
+paths include the native project, package pins, `build.sh`, source, tests and
+local build/test helpers. Manual dispatch bypasses the changed-path filter.
+The Mac job selects the latest stable Xcode, explicitly builds Development in
+Swift 5 mode with macOS 15 deployment support, runs synthetic fixtures and only
+the named safe native unit tests plus `SayStoneUITests`. It caches package
+sources under this checkout's `DerivedData/SourcePackages`; it does not populate
+the daily app's model directories. Logs and `.xcresult` bundles are retained for
+14 days, including failed runs. Hosted unsigned builds do not prove a valid
+installed signature or native permission behavior.
+
+Strict SwiftLint remains a separate check using the inherited rules. The native
+build runs independently so existing lint debt cannot suppress compilation
+evidence. A successful build never turns a failing lint check into acceptance;
+fix or explicitly review the actual lint findings before merging. No blanket
+rule suppression is introduced for new feature work.
+
+The 2026-10-10 local baseline check used the official SwiftLint 0.63.2 portable
+binary against an archived copy of committed baseline
+`3b4a14b83dc4c11fd20d7e105e4667a0c1e4a7b4`. It reported 52 strict violations,
+including force casts/unwraps, argument formatting and collection checks in
+existing request, recovery and speech-profile fixtures/services. Those findings
+were then fixed with guarded fixture parsing, safe literal construction and
+formatting changes. The current 2026-10-10 feature checkout passes the same full
+strict scan with **zero violations**. Speech-profile enrollment absence retains
+one narrowly documented collection-rule exception to preserve its wire schema.
+Affected synthetic suites pass for dictation API/cleanup, engine digests, speech
+profiles, MAI request encoding, recovery WAVs, audio-start deadlines and
+development-storage isolation. These local receipts do not claim hosted CI has
+executed; repeat checks against the exact candidate commit before adoption.
+
+This policy and workflow are local changes until pushed with authorization.
+Do not describe unexecuted GitHub jobs as passing hosted CI.
+
+## Native acceptance before adoption
+
+- Repair generated `CTranscribe.framework` with the existing helper and verify
+  the development app with `codesign --verify --deep --strict` when packaging.
+- Verify real recording, processing and delivery with authored phrases using
+  built-in and Bluetooth microphones, device changes, hotplug and sleep/wake.
+  Exercise hold/toggle shortcuts and conflicting assignments.
+- Check raw transcript retention, recoverable failures/retry, model readiness,
+  cancellation and cleanup fallback. Compare names, numbers, identifiers and
+  explicit corrections against the authored phrase.
+- Verify post-dictation workflows remain off for existing definitions. When
+  explicitly selected, the workflow owns delivery and a Paste text step is
+  required for insertion. Fail or cancel after a completed step: recognized
+  text must remain in SayStone without repeating automatic delivery or earlier
+  effects. Turn the selection off and confirm normal dictation delivery returns.
+- Check native Accessibility denial, target changes during processing, plain
+  text insertion in several apps, supported-format clipboard restoration and
+  concurrent copying. UI smoke tests do not grant real permission acceptance.
+- Discover and run the intended App Intents in Apple's Shortcuts app, including
+  macOS 15. Verify named Apple Shortcut cancellation and execution results.
+- For shared speech, follow the canonical cross-device handoff with separately
+  authorized Mac/Mini/iPhone access. Credential bootstrap, profile authority,
+  synchronization, final-only audio transport, cancellation/retry and terminal
+  receipts remain device acceptance, not consequences of a passing Mac build.
+
+Adoption requires an explicit result for each relevant check, the exact candidate
+SHA and app path, a strict-signature receipt and known limitations. Production
+replacement/release is a separate final action against that reviewed candidate.
+
+References: [GitHub workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax),
+[hosted runner specifications](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
+[artifact upload behavior](https://github.com/actions/upload-artifact).

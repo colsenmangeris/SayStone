@@ -27,7 +27,9 @@ nonisolated enum LocalPunctuationCleanup {
     static func accepts(original: String, candidate: String) -> Bool {
         guard !candidate.isEmpty else { return original.isEmpty }
         func matches(_ pattern: String, _ text: String) -> [String] {
-            let regex = try! NSRegularExpression(pattern: pattern)
+            guard let regex = try? NSRegularExpression(pattern: pattern) else {
+                preconditionFailure("The authored cleanup validation expression is invalid: \(pattern)")
+            }
             let ns = text as NSString
             return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map { ns.substring(with: $0.range) }
         }
@@ -60,7 +62,8 @@ nonisolated enum LocalPunctuationCleanup {
         defer { session.invalidateAndCancel() }
         do {
             try Task.checkCancellation()
-            var request = URLRequest(url: URL(string: "http://127.0.0.1:11434/api/chat")!)
+            guard let endpoint = URL(string: "http://127.0.0.1:11434/api/chat") else { return nil }
+            var request = URLRequest(url: endpoint)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONSerialization.data(withJSONObject: [

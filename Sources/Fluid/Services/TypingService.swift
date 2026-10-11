@@ -359,6 +359,32 @@ final class TypingService {
 
     // MARK: - Public API
 
+    /// Utilities share the dictation transaction's lifetime, including its
+    /// background restoration, without waiting on the main thread.
+    static func tryAcquireUtilityPasteSession() -> Bool {
+        Self.pasteboardSessionSemaphore.wait(timeout: .now()) == .success
+    }
+
+    static func releaseUtilityPasteSession() {
+        Self.pasteboardSessionSemaphore.signal()
+    }
+
+    /// Sends only the paste gesture; the utility transaction owns clipboard preservation.
+    static func postUtilityPaste(to target: CapturedFocusTarget) -> Bool {
+        guard AXIsProcessTrusted(), Self.isExactFocusTargetActive(target),
+              NSWorkspace.shared.frontmostApplication?.processIdentifier == target.pid,
+              let down = CGEvent(keyboardEventSource: nil, virtualKey: Self.pasteVirtualKeyCode, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: Self.pasteVirtualKeyCode, keyDown: false)
+        else { return false }
+        down.flags = .maskCommand
+        up.flags = .maskCommand
+        down.setIntegerValueField(.eventSourceUserData, value: Self.synthesizedEventUserData)
+        up.setIntegerValueField(.eventSourceUserData, value: Self.synthesizedEventUserData)
+        down.postToPid(target.pid)
+        up.postToPid(target.pid)
+        return true
+    }
+
     func typeTextInstantly(_ text: String) {
         self.typeTextInstantly(text, preferredTargetPID: nil, textReadyAt: nil)
     }
@@ -813,6 +839,8 @@ final class TypingService {
             for (type, data) in snap.dataByType {
                 item.setData(data, forType: type)
             }
+            let restoredType = NSPasteboard.PasteboardType("org.nspasteboard.RestoredType")
+            if snap.dataByType[restoredType] == nil { item.setData(Data(), forType: restoredType) }
             return item
         }
         _ = pasteboard.writeObjects(restoredItems)
@@ -851,10 +879,12 @@ final class TypingService {
         self.bench("pasteboard_snapshot_done elapsedMs=\(Self.elapsedMs(since: snapshotStartedAt)) items=\(snapshot.items.count)")
 
         let writeStartedAt = ProcessInfo.processInfo.systemUptime
-        pasteboard.clearContents()
+        let clearedChangeCount = pasteboard.clearContents()
         guard pasteboard.writeObjects([Self.makeTransientPasteboardItem(text)]) else {
             self.log("[TypingService] ERROR: Failed to set temporary clipboard string")
-            self.restorePasteboardSnapshot(snapshot, to: pasteboard)
+            if pasteboard.changeCount == clearedChangeCount {
+                self.restorePasteboardSnapshot(snapshot, to: pasteboard)
+            }
             return false
         }
         let temporaryChangeCount = pasteboard.changeCount
@@ -866,8 +896,10 @@ final class TypingService {
         let actionResult = action()
         self.bench("paste_dispatch_done elapsedMs=\(Self.elapsedMs(since: actionStartedAt)) success=\(actionResult)")
         guard actionResult else {
-            self.restorePasteboardSnapshot(snapshot, to: pasteboard)
-            self.log("[TypingService] Restored previous clipboard snapshot after paste dispatch failure")
+            if pasteboard.changeCount == temporaryChangeCount {
+                self.restorePasteboardSnapshot(snapshot, to: pasteboard)
+                self.log("[TypingService] Restored previous clipboard snapshot after paste dispatch failure")
+            }
             return false
         }
 
@@ -882,7 +914,7 @@ final class TypingService {
             let pasteboard = NSPasteboard.general
 
             // Avoid clobbering user clipboard changes that happened after our insertion.
-            if pasteboard.changeCount == temporaryChangeCount || pasteboard.string(forType: .string) == text {
+            if pasteboard.changeCount == temporaryChangeCount {
                 self.restorePasteboardSnapshot(snapshot, to: pasteboard)
                 self.log("[TypingService] Restored previous clipboard snapshot")
             } else {

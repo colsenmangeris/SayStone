@@ -31,7 +31,10 @@ nonisolated enum MAITranscriptionRequest {
             u16(UInt16(bitPattern: Int16((clamped * 32767).rounded())))
         }
         if openRouter {
-            var request = URLRequest(url: URL(string: "https://openrouter.ai/api/v1/audio/transcriptions")!)
+            guard let endpoint = URL(string: "https://openrouter.ai/api/v1/audio/transcriptions") else {
+                throw failure("The configured OpenRouter transcription endpoint is invalid.")
+            }
+            var request = URLRequest(url: endpoint)
             request.httpMethod = "POST"
             request.timeoutInterval = 120
             request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
@@ -47,8 +50,12 @@ nonisolated enum MAITranscriptionRequest {
             "enhancedMode": ["enabled": true, "model": "MAI-Transcribe-2",
                              "modelOptions": ["transcribeStyle": style.rawValue]]
         ])
-        let definition = String(decoding: definitionData, as: UTF8.self)
-        var body = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"definition\"\r\nContent-Type: application/json\r\n\r\n\(definition)\r\n--\(boundary)\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"dictation.wav\"\r\nContent-Type: audio/wav\r\n\r\n".utf8)
+        guard let definition = String(bytes: definitionData, encoding: .utf8) else {
+            throw failure("The transcription definition could not be encoded as UTF-8.")
+        }
+        let definitionPart = "--\(boundary)\r\nContent-Disposition: form-data; name=\"definition\"\r\nContent-Type: application/json\r\n\r\n\(definition)\r\n"
+        let audioPart = "--\(boundary)\r\nContent-Disposition: form-data; name=\"audio\"; filename=\"dictation.wav\"\r\nContent-Type: audio/wav\r\n\r\n"
+        var body = Data((definitionPart + audioPart).utf8)
         body.append(wav); body.append(Data("\r\n--\(boundary)--\r\n".utf8))
         var request = URLRequest(url: try endpoint(resource: resource))
         request.httpMethod = "POST"

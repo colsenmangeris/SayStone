@@ -1,19 +1,26 @@
 import Foundation
 
 @main struct MAITranscriptionRequestTests {
+    private static func require<Value>(_ value: Value?, _ message: String) throws -> Value {
+        guard let value else { throw MAITranscriptionRequest.failure("Fixture failed: \(message)") }
+        return value
+    }
+
     static func main() throws {
         let request = try MAITranscriptionRequest.make(samples: [-2, 0, 2], resource: "my-speech", key: "test-key", boundary: "test-boundary")
         precondition(request.url?.host == "my-speech.cognitiveservices.azure.com")
         precondition(request.url?.query == "api-version=2025-10-15")
         precondition(request.httpMethod == "POST")
         precondition(request.value(forHTTPHeaderField: "Ocp-Apim-Subscription-Key") == "test-key")
-        let data = request.httpBody!
-        let text = String(decoding: data, as: UTF8.self)
+        let data = try require(request.httpBody, "MAI request has no multipart body")
+        let riff = try require(data.range(of: Data("RIFF".utf8)), "Multipart body is missing its WAV header").lowerBound
+        let text = try require(String(bytes: data.prefix(riff), encoding: .utf8), "Multipart headers are not UTF-8")
         precondition(text.contains(#""model":"MAI-Transcribe-2""#))
         precondition(text.contains(#""transcribeStyle":"verbatim""#))
-        let riff = data.range(of: Data("RIFF".utf8))!.lowerBound
+        precondition(data.count >= riff + 50, "The authored WAV fixture was truncated")
         precondition(Array(data[(riff + 44)..<(riff + 50)]) == [1, 128, 0, 0, 255, 127])
-        precondition(text.hasSuffix("--test-boundary--\r\n"))
+        let footer = Data("--test-boundary--\r\n".utf8)
+        precondition(data.suffix(footer.count) == footer)
         for value in ["http://example.com", "example.com", "my-speech?secret=x", "", "https://my-speech.cognitiveservices.azure.com.evil.test"] {
             do { _ = try MAITranscriptionRequest.endpoint(resource: value); fatalError("Accepted invalid resource") } catch {}
         }
@@ -32,20 +39,25 @@ import Foundation
             precondition(router.url?.absoluteString == "https://openrouter.ai/api/v1/audio/transcriptions")
             precondition(router.value(forHTTPHeaderField: "Authorization") == "Bearer test-key")
             precondition(router.value(forHTTPHeaderField: "Ocp-Apim-Subscription-Key") == nil)
-            let json = try JSONSerialization.jsonObject(with: router.httpBody!) as! [String: Any]
+            let routerBody = try require(router.httpBody, "OpenRouter request has no JSON body")
+            let json = try require(try JSONSerialization.jsonObject(with: routerBody) as? [String: Any], "OpenRouter body is not a JSON object")
             precondition(json["model"] as? String == "microsoft/mai-transcribe-2")
-            let input = json["input_audio"] as! [String: String]
-            let audio = Data(base64Encoded: input["data"]!)!
+            let input = try require(json["input_audio"] as? [String: String], "OpenRouter input_audio is not a string dictionary")
+            let encodedAudio = try require(input["data"], "OpenRouter input_audio is missing data")
+            let audio = try require(Data(base64Encoded: encodedAudio), "OpenRouter audio is not valid base64")
             precondition(input["format"] == "wav" && audio.count == 50)
             precondition(Array(audio[44..<50]) == [1, 128, 0, 0, 255, 127])
-            let provider = json["provider"] as! [String: Any]
-            let options = provider["options"] as! [String: Any]
-            let azure = options["azure"] as! [String: Any]
-            let enhanced = azure["enhancedMode"] as! [String: Any]
-            let modelOptions = enhanced["modelOptions"] as! [String: String]
+            let provider = try require(json["provider"] as? [String: Any], "OpenRouter provider configuration is missing")
+            let options = try require(provider["options"] as? [String: Any], "OpenRouter provider options are missing")
+            let azure = try require(options["azure"] as? [String: Any], "Azure provider options are missing")
+            let enhanced = try require(azure["enhancedMode"] as? [String: Any], "Azure enhanced-mode options are missing")
+            let modelOptions = try require(enhanced["modelOptions"] as? [String: String], "MAI model options are missing")
             precondition(modelOptions["transcribeStyle"] == style.rawValue)
             let azureRequest = try MAITranscriptionRequest.make(samples: [0], resource: "my-speech", key: "test-key", style: style)
-            precondition(String(decoding: azureRequest.httpBody!, as: UTF8.self).contains("\"transcribeStyle\":\"\(style.rawValue)\""))
+            let azureBody = try require(azureRequest.httpBody, "Azure request has no multipart body")
+            let azureHeaderEnd = try require(azureBody.range(of: Data("RIFF".utf8)), "Azure request is missing its WAV header").lowerBound
+            let azureHeader = try require(String(bytes: azureBody.prefix(azureHeaderEnd), encoding: .utf8), "Azure multipart headers are not UTF-8")
+            precondition(azureHeader.contains("\"transcribeStyle\":\"\(style.rawValue)\""))
         }
         let routerText = try MAITranscriptionRequest.text(from: Data(#"{"text":"Hello."}"#.utf8), status: 200, openRouter: true)
         precondition(routerText == "Hello.")

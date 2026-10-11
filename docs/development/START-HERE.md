@@ -94,6 +94,31 @@ xcodebuild test -project SayStone.xcodeproj -scheme SayStone \
   -destination 'platform=macOS'
 ```
 
+## Mac utilities and safe fixtures
+
+Open the app's **Utilities** menu for Actions, Clipboard Library, Workflows and
+Utility Shortcuts. Utilities reuse the app's native services. No utility hotkey,
+voice phrase, post-dictation workflow or clipboard-history collection is enabled
+by default. Save a workflow before choosing it as the post-dictation workflow;
+its explicit steps replace ordinary automatic delivery.
+
+```sh
+bash scripts/local/run-mac-utility-fixtures.sh
+```
+
+The fixture runner uses authored data and unique pasteboards without launching
+the daily app. The `SayStoneUITests` target launches only the Development bundle,
+with `--ui-testing --ui-test-session <UUID>`. That startup skips onboarding,
+Keychain access, audio/model startup, analytics, API/profile-sync services and
+general-clipboard polling. Preferences and utility JSON are isolated for each
+test session under `/tmp/SayStone-UITests/<UUID>`. External actions are rejected
+in this mode. The shared scheme supplies `--ui-testing` for the native unit-test
+host as well. Avoid running unreviewed integration suites merely because their
+host is isolated; tests can still have their own external effects.
+
+See [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) for validation evidence and
+[CROSS-DEVICE-ACCEPTANCE.md](CROSS-DEVICE-ACCEPTANCE.md) for remaining device work.
+
 ## Xcode MCP
 
 This Mac already has an enabled Codex server named `xcode`, running

@@ -33,6 +33,9 @@ nonisolated struct SayStoneSpeechProfileDocument: Codable, Equatable, Sendable {
         var label: String? = nil
         var modelKey: String? = nil
         var hiddenSize: Int? = nil
+        // Absence is part of the wire schema for entries without pronunciation;
+        // replacing nil with [] would add a field to unrelated profile entries.
+        // swiftlint:disable:next discouraged_optional_collection
         var enrollments: [PronunciationEnrollment]? = nil
 
         struct PronunciationEnrollment: Codable, Equatable, Sendable {
@@ -219,8 +222,7 @@ nonisolated enum SayStoneSpeechProfileReconciler {
             $0.kind == "preference" && $0.setting?.key == "punctuation"
         }?.setting?.boolValue ?? true
 
-        let pronunciationProfiles = active.compactMap {
-            entry -> SayStoneSpeechProfileLocalSnapshot.PronunciationProfile? in
+        let pronunciationProfiles = active.compactMap { entry -> SayStoneSpeechProfileLocalSnapshot.PronunciationProfile? in
             guard entry.kind == "pronunciation",
                   let rawID = entry.dictionaryEntryId,
                   let dictionaryEntryID = UUID(uuidString: rawID),

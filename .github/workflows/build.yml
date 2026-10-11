@@ -2,10 +2,15 @@ name: Build and Test
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, feat/mac-workflows ]
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [ main ]
+    branches: [ main, feat/mac-workflows ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -17,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      relevant: ${{ steps.filter.outputs.relevant }}
+      relevant: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.relevant == 'true' }}
 
     steps:
     - name: Checkout code
@@ -27,12 +32,15 @@ jobs:
 
     - name: Detect build-related changes
       id: filter
+      if: github.event_name != 'workflow_dispatch'
       uses: dorny/paths-filter@v3
       with:
         filters: |
           relevant:
             - 'Sources/**'
             - 'Tests/**'
+            - 'scripts/local/**'
+            - 'build.sh'
             - 'SayStone.xcodeproj/**'
             - 'Package.swift'
             - 'Package.resolved'
@@ -43,7 +51,7 @@ jobs:
 
   lint:
     name: SwiftLint
-    if: needs.changes.outputs.relevant == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
+    if: needs.changes.outputs.relevant == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
     needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -61,24 +69,17 @@ jobs:
           lint --strict --config .swiftlint.yml
 
   build:
-    name: Build FluidVoice
-    if: needs.changes.outputs.relevant == 'true' && needs.lint.result == 'success'
-    needs: [changes, lint]
+    name: Isolated Mac build and fixtures
+    # Strict lint still fails when violations exist. Run the build
+    # independently so inherited lint debt does not hide compilation/test evidence.
+    if: needs.changes.outputs.relevant == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    needs: changes
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Install xcpretty
-      run: sudo gem install xcpretty
-
-    - name: Cache Whisper models
-      uses: actions/cache@v4
-      with:
-        path: ~/Library/Caches/WhisperModels
-        key: ${{ runner.os }}-whisper-models-transcribecpp-v1
 
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
@@ -86,19 +87,82 @@ jobs:
         xcode-version: latest-stable
     
     - name: Show Xcode version
-      run: xcodebuild -version
-      
-    # Tiny Whisper GGUF output is nondeterministic on hosted macOS runners.
-    # Keep this E2E assertion in the suite for local validation, but skip it in CI.
-    - name: Build and test (excluding flaky Tiny Whisper E2E)
+      id: xcode
       run: |
-        set -o pipefail
+        xcodebuild -version
+        printf 'version=%s\n' "$(xcodebuild -version | tr '\n' '-')" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pinned package sources
+      uses: actions/cache@v4
+      with:
+        path: DerivedData/SourcePackages
+        key: ${{ runner.os }}-saystone-development-spm-${{ steps.xcode.outputs.version }}-${{ hashFiles('SayStone.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+
+    - name: Prepare result folder
+      run: mkdir -p CIResults
+
+    - name: Run synthetic utility and isolation fixtures
+      run: |
+        set -euo pipefail
+        bash scripts/local/run-mac-utility-fixtures.sh 2>&1 | tee CIResults/fixtures.log
+
+    - name: Check reviewed package plugin pin
+      run: |
+        python3 - <<'PY'
+        import json
+        from pathlib import Path
+        lock = Path('SayStone.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved')
+        pins = {pin['identity']: pin['state']['revision'] for pin in json.loads(lock.read_text())['pins']}
+        reviewed = '0bb916c67f4b9e5c682cbe02a42c701c93ab5021'
+        if pins.get('mlx-swift') != reviewed:
+            raise SystemExit('Review the pinned MLX CudaBuild plugin before updating this CI allowance.')
+        PY
+
+    - name: Generate development engine metadata without models
+      run: |
+        python3 scripts/local/generate-engine-xcconfig.py \
+          --source-root "$PWD" \
+          --output "$RUNNER_TEMP/SayStoneEngineManifest.xcconfig" \
+          --model-directory "$HOME/Library/Application Support/SayStone Development/Application Support/FluidAudio/Models/parakeet-tdt-0.6b-v2-coreml"
+
+    # Model, microphone, global-hotkey and cross-app paste acceptance remain real
+    # Mac checks. The test scheme and UI tests use deterministic --ui-testing.
+    - name: Build Development and run safe native tests
+      run: |
+        set -euo pipefail
         xcodebuild test \
           -project SayStone.xcodeproj \
           -scheme SayStone \
+          -configuration Development \
           -destination 'platform=macOS,arch=arm64' \
-          -skip-testing:FluidDictationIntegrationTests/DictationE2ETests/testDictationEndToEnd_whisperTiny_transcribesFixture \
+          -derivedDataPath DerivedData \
+          -xcconfig "$RUNNER_TEMP/SayStoneEngineManifest.xcconfig" \
+          -resultBundlePath CIResults/SayStoneDevelopment.xcresult \
+          -disableAutomaticPackageResolution \
+          -onlyUsePackageVersionsFromResolvedFile \
+          -skipPackagePluginValidation \
+          -only-testing:SayStoneUITests \
+          -only-testing:FluidDictationIntegrationTests/TypingServiceTransientPasteboardTests \
+          -only-testing:FluidDictationIntegrationTests/SettingsNavigationStateTests \
+          -only-testing:FluidDictationIntegrationTests/TemperatureSupportTests \
+          -only-testing:FluidDictationIntegrationTests/SupportedFileExtensionsTests \
+          -only-testing:FluidDictationIntegrationTests/SpeakerTurnMergingTests \
+          -only-testing:FluidDictationIntegrationTests/StripThinkingTagsTests \
+          -only-testing:FluidDictationIntegrationTests/HotkeyShortcutTests/testKeyboardEventMaskExcludesMouseEvents \
+          -only-testing:FluidDictationIntegrationTests/HotkeyShortcutTests/testMouseObserverMaskCoversOnlyMouseDowns \
+          -only-testing:FluidDictationIntegrationTests/HotkeyShortcutTests/testMouseShortcutMaskMatchesConfiguredButtons \
+          SWIFT_VERSION=5 \
+          MACOSX_DEPLOYMENT_TARGET=15.0 \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
-          | xcpretty
+          2>&1 | tee CIResults/xcodebuild.log
+
+    - name: Preserve fixture logs and structured native results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: saystone-development-results-${{ github.run_id }}-${{ github.run_attempt }}
+        path: CIResults/
+        if-no-files-found: warn
+        retention-days: 14

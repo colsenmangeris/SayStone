@@ -34,8 +34,7 @@ struct SystemMicrophonePicker: View {
         .task {
             while !Task.isCancelled {
                 refresh()
-                do { try await Task.sleep(nanoseconds: 1_000_000_000) }
-                catch { break }
+                do { try await Task.sleep(nanoseconds: 1_000_000_000) } catch { break }
             }
         }
     }

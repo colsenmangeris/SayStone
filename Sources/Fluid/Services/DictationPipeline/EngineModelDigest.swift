@@ -32,7 +32,7 @@ nonisolated enum EngineModelDigest {
         var tree = SHA256()
         for file in files {
             guard let digest = self.sha256File(at: file.url) else { return nil }
-            guard let line = "\(digest)  \(file.relative)\n".data(using: .utf8) else { return nil }
+            let line = Data("\(digest)  \(file.relative)\n".utf8)
             tree.update(data: line)
         }
         return tree.finalize().map { String(format: "%02x", $0) }.joined()

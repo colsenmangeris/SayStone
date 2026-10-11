@@ -1,5 +1,5 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct MAISpeechSettingsView: View {
     @ObservedObject var settings: SettingsStore

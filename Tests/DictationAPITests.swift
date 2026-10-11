@@ -165,7 +165,7 @@ struct DictationAPITests {
 
         let dependencies = self.makeDependencies(
             isBusy: { true },
-            writeTemporaryFile: { data, fileExtension in
+            writeTemporaryFile: { _, fileExtension in
                 recorder.wroteTemp = true
                 return FileManager.default.temporaryDirectory
                     .appendingPathComponent(UUID().uuidString)
@@ -195,7 +195,7 @@ struct DictationAPITests {
         }
         let recorder = Recorder()
         let dependencies = self.makeDependencies(
-            writeTemporaryFile: { data, fileExtension in
+            writeTemporaryFile: { _, fileExtension in
                 recorder.wroteTemp = true
                 return FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
                     .appendingPathExtension(fileExtension)
@@ -342,7 +342,7 @@ struct DictationAPITests {
             providerKey: "ollama",
             model: LocalPunctuationCleanup.model
         )
-        let cleaner: @Sendable (String) async -> String? = { text in
+        let cleaner: @Sendable (String) async -> String? = { _ in
             await counter.increment()
             return "Cortana. Hello."
         }
@@ -420,7 +420,9 @@ struct DictationAPITests {
             "audioBase64": audio.base64EncodedString(),
             "filename": "clip.wav",
         ]
-        let body = try! JSONSerialization.data(withJSONObject: json)
+        guard let body = try? JSONSerialization.data(withJSONObject: json) else {
+            preconditionFailure("The authored dictation request fixture could not be encoded as JSON.")
+        }
 
         let deps = self.makeDependencies(
             writeTemporaryFile: { data, fileExtension in
@@ -480,7 +482,12 @@ struct DictationAPITests {
         precondition(engine?["modelSha256"] == nil || engine?["modelSha256"] is NSNull, "no invented model hash")
 
         // Round-trip through the declared Codable shape to keep the contract honest.
-        let decoded = try! LocalAPI.decoder.decode(DictationAPI.ResponseBody.self, from: response.body)
+        let decoded: DictationAPI.ResponseBody
+        do {
+            decoded = try LocalAPI.decoder.decode(DictationAPI.ResponseBody.self, from: response.body)
+        } catch {
+            preconditionFailure("The dictation response failed its declared Codable schema: \(error)")
+        }
         self.assertEqual(decoded.requestId, "schema-check", "decoded request id")
         self.assertEqual(decoded.enhancement.outcome, .notSelected, "decoded enhancement outcome")
         self.assertEqual(decoded.engineReadiness, .unknown, "decoded readiness")

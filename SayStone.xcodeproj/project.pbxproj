@@ -40,6 +40,7 @@
 		86CAA2D4EF18433096185602 /* LLMClientRequestBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343B29013F4441D6A797D12D /* LLMClientRequestBodyTests.swift */; };
 		5A5700000000000000000003 /* Qwen3ASR in Frameworks */ = {isa = PBXBuildFile; productRef = 5A5700000000000000000002 /* Qwen3ASR */; };
 		5A5700000000000000000005 /* QwenProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A5700000000000000000004 /* QwenProviderTests.swift */; };
+		FEA700000000000000000002 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CDB0A2C2F3C4D5600FB7CAD /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -93,6 +94,7 @@
 		7CDB0A2B2F3C4D5600FB7CAD /* dictation_fixture.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = dictation_fixture.wav; sourceTree = "<group>"; };
 		7CDB0A2C2F3C4D5600FB7CAD /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Platforms/MacOSX.platform/Developer/Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		5A5700000000000000000004 /* QwenProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QwenProviderTests.swift; sourceTree = "<group>"; };
+		FEA700000000000000000003 /* SayStoneUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SayStoneUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -101,6 +103,7 @@
 			path = Sources/Fluid;
 			sourceTree = "<group>";
 		};
+		FEA700000000000000000004 /* SayStoneUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = Tests/SayStoneUITests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,6 +129,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FEA700000000000000000005 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (FEA700000000000000000002 /* XCTest.framework in Frameworks */, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -133,6 +137,7 @@
 			isa = PBXGroup;
 			children = (
 				7C078D912E3B339200FB7CAC /* Sources/Fluid */,
+				FEA700000000000000000004 /* SayStoneUITests */,
 				7CDB0A242F3C4D5600FB7CAD /* Tests */,
 				7CDB0A282F3C4D5600FB7CAD /* Frameworks */,
 			);
@@ -143,6 +148,7 @@
 			children = (
 				7C078D8F2E3B339200FB7CAC /* SayStone.app */,
 				7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */,
+				FEA700000000000000000003 /* SayStoneUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -262,6 +268,18 @@
 			productReference = 7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		FEA700000000000000000001 /* SayStoneUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FEA700000000000000000008 /* Build configuration list for SayStoneUITests */;
+			buildPhases = (FEA700000000000000000006 /* Sources */, FEA700000000000000000005 /* Frameworks */, FEA700000000000000000007 /* Resources */, );
+			buildRules = ();
+			dependencies = (7CDB0A312F3C4D5600FB7CAD /* PBXTargetDependency */, );
+			fileSystemSynchronizedGroups = (FEA700000000000000000004 /* SayStoneUITests */, );
+			name = SayStoneUITests;
+			productName = SayStoneUITests;
+			productReference = FEA700000000000000000003 /* SayStoneUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -272,6 +290,7 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					FEA700000000000000000001 = {CreatedOnToolsVersion = 27.0; TestTargetID = 7C078D8E2E3B339200FB7CAC; };
 					7C078D8E2E3B339200FB7CAC = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -302,6 +321,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				FEA700000000000000000001 /* SayStoneUITests */,
 				7C078D8E2E3B339200FB7CAC /* SayStone */,
 				7CDB0A1F2F3C4D5600FB7CAD /* FluidDictationIntegrationTests */,
 			);
@@ -324,6 +344,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FEA700000000000000000007 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -363,6 +384,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FEA700000000000000000006 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -807,6 +829,57 @@
 			};
 			name = Development;
 		};
+		FEA700000000000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				DEVELOPMENT_TEAM = V4J43B279J;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.architech.saystone.development.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks", );
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = SayStone;
+			};
+			name = Debug;
+		};
+		FEA700000000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				DEVELOPMENT_TEAM = V4J43B279J;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.architech.saystone.development.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks", );
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = SayStone;
+			};
+			name = Release;
+		};
+		FEA700000000000000000011 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				DEVELOPMENT_TEAM = V4J43B279J;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.architech.saystone.development.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks", );
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited) SAYSTONE_DEVELOPMENT";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = SayStone;
+			};
+			name = Development;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -840,6 +913,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		FEA700000000000000000008 /* Build configuration list for SayStoneUITests */ = {isa = XCConfigurationList; buildConfigurations = (FEA700000000000000000009 /* Debug */, FEA700000000000000000010 /* Release */, FEA700000000000000000011 /* Development */, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Development; };
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */

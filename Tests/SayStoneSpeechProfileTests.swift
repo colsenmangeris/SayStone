@@ -3,8 +3,10 @@ import Foundation
 @main
 struct SayStoneSpeechProfileTests {
     static func main() throws {
-        let replacementID = UUID(uuidString: "CB3A3497-3F89-4D62-8B04-1E61D24B3A70")!
-        let dictionaryEntryID = UUID(uuidString: "8899D64E-3868-4A76-A10F-6DB35E4B3394")!
+        guard let replacementID = UUID(uuidString: "CB3A3497-3F89-4D62-8B04-1E61D24B3A70"),
+              let dictionaryEntryID = UUID(uuidString: "8899D64E-3868-4A76-A10F-6DB35E4B3394") else {
+            preconditionFailure("The authored speech-profile fixture UUIDs are invalid.")
+        }
         let snapshot = SayStoneSpeechProfileLocalSnapshot(
             words: [.init(text: "Oikonomos", weight: 10, aliases: ["economos"])],
             replacements: [.init(id: replacementID, triggers: ["say stone"], replacement: "SayStone")],

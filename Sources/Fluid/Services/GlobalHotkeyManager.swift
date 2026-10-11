@@ -260,6 +260,11 @@ final class GlobalHotkeyManager: NSObject {
     private var isShortcutCaptureActiveProvider: (() -> Bool)?
     private var cancelCallback: (() -> Bool)? // Returns true if handled
     private var pasteLastTranscriptionCallback: (() -> Void)?
+    private var utilityShortcutHandler: ((UInt16, NSEvent.ModifierFlags, Bool) -> Bool)?
+
+    func setUtilityShortcutHandler(_ handler: @escaping (UInt16, NSEvent.ModifierFlags, Bool) -> Bool) {
+        self.utilityShortcutHandler = handler
+    }
     private var hotkeyMode: HotkeyActivationMode = SettingsStore.shared.hotkeyMode
     private let automaticTapThresholdSeconds: TimeInterval = 0.4
 
@@ -1163,6 +1168,10 @@ final class GlobalHotkeyManager: NSObject {
         switch type {
         case .keyDown:
             self.markOtherInputDuringModifierOnly()
+
+            if self.utilityShortcutHandler?(keyCode, eventModifiers, event.getIntegerValueField(.keyboardEventAutorepeat) != 0) == true {
+                return nil
+            }
 
             // Check the configured cancel shortcut first.
             if SettingsStore.shared.cancelRecordingHotkeyShortcut.matches(keyCode: keyCode, modifiers: eventModifiers) {
