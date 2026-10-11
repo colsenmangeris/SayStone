@@ -89,6 +89,24 @@ Build logs are local:
 `/tmp/saystone-development-build.log` and
 `/tmp/saystone-development-test-build.log`.
 
+### Background synthetic review on 2026-10-11
+
+The signed temporary review helper embeds a fresh UUID only in a generated copy
+of the exact Development product. Invalid embedded metadata fails before normal
+startup; valid metadata selects a UUID preferences suite and utility data under
+the platform temporary directory. Compile-time Development and public fixtures
+verify UUID/identity/namespace and foreground/background guards. Normal app
+identity and ordinary Development startup are unchanged.
+
+Native Computer Use verified the copied executable PID/path and synthetic
+workspace before authored search/trim. Its focus monitor caught a desktop
+activation during the text/action sequence. Review stopped and the copy was
+closed and removed after verified exit; the dedicated desktop remains required
+for further interaction. No general clipboard input, permissions, microphone,
+Keychain or daily data were used. This copy shares ordinary Development's
+permissions ID, so it is unsuitable for App Intent discovery acceptance.
+See [NATIVE-UI-REVIEW.md](NATIVE-UI-REVIEW.md).
+
 ### Overnight verification on 2026-10-11
 
 The Flash provider now passes its Development model destination explicitly to

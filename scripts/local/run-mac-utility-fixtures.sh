@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 FIXTURES=(
     Tests/run_development_isolation_tests.sh
+    Tests/run_development_runtime_fixture.sh
     Tests/run_flash_cache_fixture.sh
     Tests/UtilityCore_run_tests.sh
     Tests/run_clipboard_library_tests.sh

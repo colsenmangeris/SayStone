@@ -31,7 +31,8 @@ own committed project versions.
    This conversation began in T3's scratch folder; its working directory is not
    automatically changed by renaming the repository.
 3. Read [BUILD-PROMPT.txt](BUILD-PROMPT.txt), then send it when ready to begin
-   feature work. Setup has not executed the feature prompt.
+   feature work. Implementation and current acceptance status are recorded in
+   [MORNING-UPDATE-2026-10-11.md](MORNING-UPDATE-2026-10-11.md).
 
 Do not select the older recovery checkout for this feature build.
 
@@ -116,7 +117,8 @@ the daily app. The `SayStoneUITests` target launches only the Development bundle
 with `--ui-testing --ui-test-session <UUID>`. That startup skips onboarding,
 Keychain access, audio/model startup, analytics, API/profile-sync services and
 general-clipboard polling. Preferences and utility JSON are isolated for each
-test session under `/tmp/SayStone-UITests/<UUID>`. External actions are rejected
+test session under the platform temporary directory's `SayStone-UITests/<UUID>`.
+External actions are rejected
 in this mode. The shared scheme supplies `--ui-testing` for the native unit-test
 host as well. Avoid running unreviewed integration suites merely because their
 host is isolated; tests can still have their own external effects.
@@ -138,10 +140,16 @@ the app host, so do not treat them as guaranteed desktop-free checks.
 
 Native Computer Use is available for scoped app inspection; OpenAI documents
 [background operation on macOS](https://learn.chatgpt.com/docs/computer-use).
-Verify the current host's behavior before relying
-on that mode: SayStone's synthetic startup currently activates its window too.
+SayStone now has a guarded background synthetic startup for signed temporary
+review copies. Launch and action search stayed in the background in the October
+11 check, but the authored text/action sequence caused a monitored focus switch.
+That check failed background acceptance, and the temporary app was closed.
+Keep native interactions on a dedicated test desktop until background behavior
+is established for this host. Source guards alone do not prove it.
 Do not run two controllers against the same app. The T3 iOS simulator controls
 an iOS device; it cannot execute this macOS app or replace native Mac acceptance.
+See [NATIVE-UI-REVIEW.md](NATIVE-UI-REVIEW.md) for preparation, focus guards and
+the recorded result.
 
 Authored speech acceptance is a separate opt-in. After compiling test products
 and repairing the host, use the command below. A final app-only build removes

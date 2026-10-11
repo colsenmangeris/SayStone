@@ -8,8 +8,9 @@ functional verification and package receipt refer to `8798db8`. Overnight
 hardening is `a08452d` plus functional correction `e68b756`; subsequent test and
 acceptance-helper changes are `98289e2` and `9eaed9f`. The dated receipts below
 describe their respective revisions, rather than one interchangeable candidate.
-The packaged candidate is now `a06056a`, adding synthetic scene startup settings;
-that latest change has compilation/signature/lint checks but no GUI rerun.
+The packaged candidate is now `5f3edae`, including guarded background synthetic
+startup. Native review confirmed workspace/search/trim, but background
+interaction failed its focus guard and stopped. Full UI acceptance remains open.
 Implemented features are distinct from real-device acceptance.
 
 ## Runnable development app
@@ -210,12 +211,35 @@ The [morning handoff](MORNING-UPDATE-2026-10-11.md) and
 [compact receipt snapshot](validation/2026-10-11-local-receipts.json) preserve
 the current state without depending solely on temporary result bundles.
 
+### Native Computer Use review after resume
+
+Commits `dda2bb2` and `5f3edae` add valid-UUID embedded synthetic startup,
+fail-closed pre-service validation, background activation guards, a signed
+temporary-copy preparation helper and read-only activation/focus observation.
+Development and public startup fixtures pass; the local fixture runner now
+contains seven suites. The signed app-only build at `5f3edae` passed strict deep
+verification in `/tmp/saystone-native-background-build.log`.
+
+Native CUA opened only the signed temporary review copy and verified exact
+PID/path/UUID. Search filtered correctly, and authored padded input trimmed to
+`Authored trim fixture 123`. Launch and search stayed in the background; the
+text/action sequence returned `AXError.failure` and recorded a focus switch.
+The current host failed background acceptance. Interactions stopped, the copy
+was closed, process exit verified, and only the generated temporary app removed.
+No foreground XCTest or permission grants occurred. No explicit activation call
+was found in the synthetic trim action path; the cause remains unproven.
+
+See [NATIVE-UI-REVIEW.md](NATIVE-UI-REVIEW.md) and
+[validation/2026-10-11-native-review.json](validation/2026-10-11-native-review.json).
+Clipboard persistence, workflow copy/persistence, shortcut capture/conflict and
+synthetic external-paste denial remain pending at this candidate.
+
 ## Remaining acceptance and next actions
 
 1. Resolve the signed native UI setup failure and repeat all four smoke scenarios
    against the final candidate during an agreed uninterrupted test window or on
-   a dedicated test Mac. First verify native Computer Use background behavior if
-   using that tool for scoped checks. Preserve the failed receipts for comparison.
+   a dedicated test Mac. Background native interaction failed here; keep it off
+   the occupied desktop. Preserve the failed receipts for comparison.
 2. Use the isolated development app for authored microphone tests: built-in and
    Bluetooth routing, hotplug, sleep/wake, hold/toggle, cancellation, recognition
    retry and raw fallback. Its separate identity needs its own macOS permissions.

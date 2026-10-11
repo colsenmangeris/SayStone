@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-11",
+  "sourceRevision": "5f3edae2ecd053b749d6cd288e0e1c06c2b2c84a",
+  "controller": "Codex native Computer Use",
+  "foregroundXCTestStarted": false,
+  "appPath": "/private/var/folders/tj/kjtgcf6906q5p88__59pc4x40000gn/T/saystone-native-review-h4wzhhdw/SayStone Native Review.app",
+  "bundleIdentifier": "com.architech.saystone.development",
+  "session": "FA52E629-845F-491B-907E-038571C572C9",
+  "strictSignatureVerified": true,
+  "exactPIDAndExecutableVerified": true,
+  "pid": 93936,
+  "focusObserverLog": "/private/var/folders/tj/kjtgcf6906q5p88__59pc4x40000gn/T/saystone-native-review-h4wzhhdw/focus.jsonl",
+  "observationStart": "2026-10-11T07:33:33Z",
+  "observationEnd": "2026-10-11T07:35:59Z",
+  "backgroundAcceptance": "failed",
+  "activationCount": 2,
+  "firstTargetActivation": {
+    "event": "activation",
+    "frontmostPID": 94679,
+    "targetActivated": true,
+    "targetEverFrontmost": true,
+    "targetFrontmost": false,
+    "targets": [
+      {
+        "active": true,
+        "appPath": "/private/var/folders/tj/kjtgcf6906q5p88__59pc4x40000gn/T/saystone-native-review-h4wzhhdw/SayStone Native Review.app",
+        "pid": 93936
+      }
+    ],
+    "time": "2026-10-11T07:34:33Z"
+  },
+  "firstFrontmostObservation": "2026-10-11T07:34:33Z",
+  "lastFrontmostObservation": "2026-10-11T07:34:44Z",
+  "focusCheckBeforeLaunchAndSearch": "passed",
+  "functionalObservations": {
+    "search": "Transform text filtered to one selected row",
+    "editor": "  Authored trim fixture 123  ",
+    "result": "Authored trim fixture 123",
+    "status": "Text transformed."
+  },
+  "toolError": "AXError.failure during the text-entry/action-click sequence; subsequent AX showed the authored result. Precise activation cause is unproven.",
+  "response": "Stopped utility interactions when the focus guard fired; scoped Cmd-Q closed the temporary app; process exit verified without further app discovery.",
+  "reviewProcessRunningAtEnd": false,
+  "observerStopped": true,
+  "remainingScenarios": [
+    "synthetic paste denial",
+    "snippet save/edit/persistence",
+    "workflow transform/copy/persistence",
+    "app-local shortcut capture/conflict"
+  ],
+  "generalClipboardAccessPerformed": false,
+  "permissionGrantsPerformed": false,
+  "reviewPreparationReceipt": "/private/var/folders/tj/kjtgcf6906q5p88__59pc4x40000gn/T/saystone-native-review-h4wzhhdw/review.json",
+  "reviewCopyRemovedAfterExit": true,
+  "cleanupNote": "Removed only the generated temporary app after confirmed exit, preventing later same-ID reuse; private preparation/focus receipts retained."
+}

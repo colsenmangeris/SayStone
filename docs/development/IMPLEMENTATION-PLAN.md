@@ -174,6 +174,25 @@ before launching XCTest. The negative preflight passed against the final app-onl
 package, which intentionally omits plug-ins. Rebuild native test products and
 repair the generated host before using the authored speech helper again.
 
+### Native review and guarded synthetic startup after resume
+
+`dda2bb2` adds embedded UUID startup restricted to the compiled Development
+product with its exact bundle ID; malformed markers fail before storage/settings
+or services. Background synthetic startup skips explicit activation, uses
+accessory policy and declines reopen. `5f3edae` hardens preparation/signing and
+focus observation. The normal app path and foreground CLI UI mode are preserved.
+The signed app-only build passed at `5f3edae`; the fixture runner now contains
+seven suites including Development/public startup guards.
+
+Native Computer Use confirmed the synthetic workspace, filtered action search
+and authored trim output, then failed the background focus check during the
+text/action sequence. The review stopped, the temporary app was closed and
+removed after verified exit. No foreground XCTest was run. Source review found
+no explicit activation in the trim path, so precise cause remains unproven.
+Complete the remaining native scenarios on a dedicated test desktop. Details:
+[NATIVE-UI-REVIEW.md](NATIVE-UI-REVIEW.md) and
+[validation/2026-10-11-native-review.json](validation/2026-10-11-native-review.json).
+
 ## Boundaries
 
 No private transcript, clipboard-history or credential inspection is needed for

@@ -6,7 +6,7 @@
   "build": {
     "result": "passed",
     "app": "/Users/colsenmangeris/SayStone-worktrees/mac-workflows/DerivedData/Build/Products/Development/SayStone Development.app",
-    "log": "/tmp/saystone-morning-scene-build.log",
+    "log": "/tmp/saystone-native-background-build.log",
     "metadata": {
       "CFBundleIdentifier": "com.architech.saystone.development",
       "CFBundleDisplayName": "SayStone Development",
@@ -14,7 +14,7 @@
       "CFBundleShortVersionString": "1.6.10",
       "CFBundleVersion": "22",
       "LSMinimumSystemVersion": "15.0",
-      "SayStoneEngineRuntimeCommit": "a06056ac1806b27bb82dbc3e440aa9cf24c198b4",
+      "SayStoneEngineRuntimeCommit": "5f3edae2ecd053b749d6cd288e0e1c06c2b2c84a",
       "SayStoneEngineFluidAudioRevision": "3fd63887eef1dc25edea8263ce4b44aa854d898b",
       "SayStoneEngineModelSha256": ""
     },
@@ -117,27 +117,36 @@
   ],
   "syntheticFixtures": {
     "result": "passed",
-    "suiteCount": 6,
-    "log": "/tmp/saystone-overnight-fixtures.log",
+    "suiteCount": 7,
+    "log": "/tmp/saystone-background-all-fixtures.log",
     "scope": [
       "development/public storage isolation",
+      "embedded UUID startup: development/public identity, namespace and foreground/background guards",
       "Flash explicit cache routing with SDK stub",
       "utility core",
       "clipboard library",
       "workflows",
       "utility shortcuts"
-    ]
+    ],
+    "sourceRevision": "5f3edae2ecd053b749d6cd288e0e1c06c2b2c84a"
   },
   "lint": {
     "version": "0.63.2",
     "result": "passed",
     "findingCount": 0,
-    "log": "/tmp/saystone-morning-lint.json"
+    "log": "/tmp/saystone-morning-lint.json",
+    "scopeNote": "Last full-project receipt predates background startup. The background startup agent and root separately passed strict lint on changed Swift files; no new full-project lint is claimed."
   },
   "currentUIAcceptance": {
-    "result": "pending",
-    "sourceRevision": "a06056ac1806b27bb82dbc3e440aa9cf24c198b4",
-    "reason": "Synthetic scene launch/restoration candidate compiled and reviewed; no GUI rerun after the foreground automation pause."
+    "result": "partial; complete acceptance pending",
+    "sourceRevision": "5f3edae2ecd053b749d6cd288e0e1c06c2b2c84a",
+    "functionalObservations": [
+      "synthetic workspace launch",
+      "filtered Transform text search",
+      "correct authored trim output"
+    ],
+    "reason": "Native Computer Use interaction failed the focus guard; review app closed and removed after verified exit. Four complete native smoke scenarios remain pending on a dedicated test desktop.",
+    "receipt": "docs/development/validation/2026-10-11-native-review.json"
   },
   "speechHelperMissingBundlePreflight": {
     "result": "passed",
@@ -146,5 +155,16 @@
     "log": "/tmp/saystone-morning-missing-test-host.log",
     "appLaunchPerformed": false,
     "note": "Final app-only package intentionally has no hosted test plug-ins; helper refused before XCTest launch."
+  },
+  "backgroundReview": {
+    "result": "failed",
+    "controller": "native Computer Use",
+    "foregroundXCTestStarted": false,
+    "reviewProcessRunningAtEnd": false,
+    "receipt": "docs/development/validation/2026-10-11-native-review.json"
+  },
+  "reviewPreparationPreflight": {
+    "staleProductRejectedBeforeLaunch": true,
+    "log": "/tmp/saystone-stale-review-guard.log"
   }
 }
