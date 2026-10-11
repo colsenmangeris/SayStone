@@ -45,6 +45,12 @@ if Path(host).resolve() != expected.resolve():
 info = plistlib.loads((expected / 'Contents/Info.plist').read_bytes())
 if info.get('CFBundleIdentifier') != 'com.architech.saystone.development':
     raise SystemExit('Refusing acceptance with a non-development bundle identity.')
+bundle = units.get('TestBundlePath', '').replace('__TESTHOST__', str(expected)).replace('__TESTROOT__', str(products))
+expected_bundle = expected / 'Contents/PlugIns/FluidDictationIntegrationTests.xctest'
+if Path(bundle).resolve() != expected_bundle.resolve():
+    raise SystemExit('The hosted unit-test bundle must be inside this checkout\'s isolated Development product.')
+if not expected_bundle.is_dir():
+    raise SystemExit('Build native test products first; the hosted unit-test bundle is missing from the packaged app.')
 arguments = units.get('CommandLineArguments', [])
 if '--ui-testing' not in arguments:
     raise SystemExit('Acceptance requires synthetic --ui-testing startup.')
