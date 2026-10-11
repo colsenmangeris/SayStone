@@ -25,8 +25,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if DevelopmentRuntime.isUITesting {
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
+            NSApp.setActivationPolicy(DevelopmentRuntime.isBackgroundUITesting ? .accessory : .regular)
+            if !DevelopmentRuntime.isBackgroundUITesting {
+                NSApp.activate(ignoringOtherApps: true)
+            }
             return
         }
         // Bring up file logging + crash handlers immediately during launch.
@@ -174,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if DevelopmentRuntime.isUITesting { return true }
+        if DevelopmentRuntime.isUITesting { return !DevelopmentRuntime.isBackgroundUITesting }
         if self.shouldSuppressNextReopenActivation {
             self.shouldSuppressNextReopenActivation = false
             return true

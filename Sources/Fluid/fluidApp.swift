@@ -18,6 +18,7 @@ struct FluidApp: App {
 
     init() {
         do {
+            try DevelopmentRuntime.validateSyntheticStartup()
             try AppStorage.prepareDevelopmentStorage()
         } catch {
             fatalError("Could not prepare isolated development storage: \(error.localizedDescription)")
@@ -33,7 +34,9 @@ struct FluidApp: App {
                 if DevelopmentRuntime.isUITesting {
                     UtilityWorkspaceView(coordinator: MacUtilityCoordinator.shared)
                         .onAppear {
+                            guard !DevelopmentRuntime.isBackgroundUITesting else { return }
                             DispatchQueue.main.async {
+                                guard !DevelopmentRuntime.isBackgroundUITesting else { return }
                                 NSApp.windows.first(where: { $0.identifier?.rawValue.hasPrefix("main-") == true })?.makeKeyAndOrderFront(nil)
                                 NSApp.activate(ignoringOtherApps: true)
                             }

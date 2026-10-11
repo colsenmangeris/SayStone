@@ -49,7 +49,7 @@ final class MacUtilityCoordinator: ObservableObject {
     }
 
     func show(tab: String = "palette", captureTarget: Bool = true) {
-        if captureTarget, !self.isExecuting, !self.isDispatching, !self.isIntentExecuting, !self.workflowRunner.state.isRunning, self.pendingShortcutTask == nil {
+        if captureTarget, !DevelopmentRuntime.isUITesting, !self.isExecuting, !self.isDispatching, !self.isIntentExecuting, !self.workflowRunner.state.isRunning, self.pendingShortcutTask == nil {
             self.target = TypingService.captureSystemFocusTarget()
         }
         self.selectedTab = tab
@@ -64,13 +64,17 @@ final class MacUtilityCoordinator: ObservableObject {
             window.center()
             self.window = window
         }
-        self.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if DevelopmentRuntime.isBackgroundUITesting {
+            self.window?.orderBack(nil)
+        } else {
+            self.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 
     func perform(_ request: UtilityActionRequest, captureTarget: Bool = false) {
         guard !self.isExecuting, !self.isIntentExecuting, !self.workflowRunner.state.isRunning else { return }
-        if captureTarget { self.target = TypingService.captureSystemFocusTarget() }
+        if captureTarget, !DevelopmentRuntime.isUITesting { self.target = TypingService.captureSystemFocusTarget() }
         self.isExecuting = true
         self.actionTask = Task { [weak self] in
             guard let self else { return }
@@ -261,7 +265,7 @@ final class MacUtilityCoordinator: ObservableObject {
     func runWorkflow(_ workflow: UtilityWorkflow, input: String, captureTarget: Bool = false) -> Bool {
         guard !Task.isCancelled else { self.message = "Workflow cancelled before starting."; return false }
         guard !self.isExecuting, !self.isDispatching, !self.isIntentExecuting else { self.message = "Wait for the current action to finish."; return false }
-        if captureTarget { self.target = TypingService.captureSystemFocusTarget() }
+        if captureTarget, !DevelopmentRuntime.isUITesting { self.target = TypingService.captureSystemFocusTarget() }
         let started = self.workflowRunner.start(
             workflow: workflow,
             initialText: input,
