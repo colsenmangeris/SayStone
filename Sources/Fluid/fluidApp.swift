@@ -46,6 +46,11 @@ struct FluidApp: App {
             }
         }
         .defaultSize(width: 1000, height: 700)
+        // Synthetic tests must start with a workspace even when macOS has
+        // retained a previously closed window. Normal launches keep SwiftUI's
+        // default launch and restoration behavior.
+        .defaultLaunchBehavior(DevelopmentRuntime.isUITesting ? .presented : .automatic)
+        .restorationBehavior(DevelopmentRuntime.isUITesting ? .disabled : .automatic)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
