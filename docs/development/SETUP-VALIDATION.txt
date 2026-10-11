@@ -1,0 +1,40 @@
+SAYSTONE SETUP VALIDATION — 2026-10-10 (America/Denver)
+
+PASS: Personal GitHub repository colsenmangeris/SayStone exists, public, Swift.
+PASS: origin preserved; upstream altic-dev/FluidVoice preserved.
+PASS: Repository moved to /Users/colsenmangeris/SayStone.
+PASS: Both linked worktrees moved under /Users/colsenmangeris/SayStone-worktrees.
+PASS: git worktree repair completed; branch/status checks succeeded in all checkouts.
+PASS: Original modified docs/custom/STATUS.md preserved byte-for-byte.
+PASS: Shared-speech checkout remains clean; its committed sources were not edited.
+PASS: T3 project SayStone registered through the installed official project CLI,
+      rooted at /Users/colsenmangeris/SayStone-worktrees/mac-workflows.
+PASS: Live CLI project verification succeeded without an offline fallback.
+PASS: Development Xcode project/scheme/target names and build references updated.
+PASS: Xcode opened SayStone.xcodeproj, selected SayStone and My Mac.
+PASS: plutil project syntax, shared-scheme reference checks and bash syntax checks.
+PASS: Dependency pins identical to the previous committed Xcode lockfile.
+PASS: Signed Debug build — SAYSTONE_REVIEWED_PACKAGE_PLUGINS=1 ./build.sh.
+PASS: Existing MLX CudaBuild source reviewed at pinned version; on macOS it
+      returns no build commands. Per-build validation skip used, no global trust added.
+PASS: CTranscribe framework repaired and strict deep code signature verified.
+PASS: xcodebuild build-for-testing compiled FluidDictationIntegrationTests.
+PASS: git diff --check.
+
+PENDING: Executing integration tests or launching an interactive development app.
+         The existing daily app shares the Debug identity; data isolation is needed
+         before routine interactive testing. No replacement install was performed.
+PENDING: Native microphone/hotkey/paste/clipboard and cross-device acceptance.
+PENDING: Xcode MCP tools attached to the next actual Codex project session.
+         Codex xcode server enabled; Xcode permits external agents while open.
+         Temporary probe initialized xcode-tools 25280.8, but its tool list required
+         an Allow prompt; the temporary probe was denied instead of granting it access.
+
+BUILD PRODUCT:
+/Users/colsenmangeris/SayStone-worktrees/mac-workflows/DerivedData/Build/Products/Debug/SayStone.app
+
+LOCAL LOGS (not committed):
+/tmp/saystone-setup-final-build.log
+/tmp/saystone-setup-test-build.log
+
+No feature prompt executed, no release and no remote push during setup.

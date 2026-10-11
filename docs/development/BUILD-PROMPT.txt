@@ -1,0 +1,97 @@
+Continue SayStone as my native, local-first macOS app for speech-to-text,
+keyboard shortcuts, clipboard actions, and repeatable workflows. Work in
+/Users/colsenmangeris/SayStone-worktrees/mac-workflows on feat/mac-workflows.
+Extend the existing Swift app with SwiftUI and AppKit where needed. Preserve
+its useful native/model dependencies and existing settings/data. Keep the
+tagline: "What you say becomes something you can build on."
+
+First inspect applicable AGENTS.md instructions, git status, SayStone.xcodeproj,
+the SayStone scheme, build.sh, Package.resolved, existing tests, and
+docs/custom/HANDOFF-2026-09-22-SHARED-SPEECH.md. Map the existing dictation,
+hotkey, insertion, clipboard, command-mode, settings, and persistence code.
+Report which capabilities are implemented, which have been tested, and what
+is missing. Treat inherited README feature claims as claims to verify.
+
+Establish the current signed public build and test baseline using this
+repository's Xcode workflow and docs/development/START-HERE.md. Investigate baseline failures before blaming a
+new feature. Keep the existing macOS 15 minimum unless a concrete feature
+requires a separately reviewed compatibility change. New Apple APIs must
+have availability checks or appropriate fallbacks. The installed compiler
+version does not require a wholesale Swift language-mode migration.
+
+Build in small, usable increments:
+
+1. Reliable dictation: preserve the working local Parakeet path, microphone
+   selection, hold/toggle activation, vocabulary and replacements, visible
+   recording/processing/delivery states, cancellation, and recoverable
+   recognition failures. Keep raw transcripts available. Optional cleanup
+   must preserve words, names, numbers, identifiers, and explicit corrections,
+   and fall back to raw text when it cannot safely finish. Do not change
+   provider defaults or enable cloud processing merely to make a demo work.
+
+2. Unified actions and keyboard shortcuts: reuse GlobalHotkeyManager and
+   existing models. Add a typed action registry shared by menu items, a
+   searchable command palette, configurable keyboard shortcuts, and workflows.
+   Detect conflicts, retain existing shortcuts, and support per-app context
+   where useful. Revalidate the intended target before inserting text.
+
+3. Clipboard tools: support paste as plain text, copy the latest transcript,
+   pinned text snippets, and simple text transformations. Implement clipboard
+   history/search as an explicit opt-in with retention, clear-history controls,
+   and app exclusions. Respect available sensitive/concealed clipboard markers.
+   If using temporary clipboard content for paste, preserve supported formats
+   and restore only when the clipboard has not been changed by another actor.
+   Never paste into an unintended app after focus changes.
+
+4. Workflows: initially compose deterministic, typed actions such as
+   transcribe -> transform -> copy/paste, insert a snippet, launch an app,
+   open a URL, or run a user-selected Apple Shortcut. Distinguish keyboard
+   shortcuts from Apple's Shortcuts app. Execute named shortcuts with
+   Process and separate arguments rather than concatenated shell commands.
+   Include bounded execution, cancellation, validation, and clear results.
+   Review existing command-mode execution before extending it. Voice phrases
+   should resolve to explicit actions rather than unrestricted generated
+   shell commands. Use confirmation for actions that send messages, delete
+   data, or cause other irreversible effects.
+
+5. System integration: expose suitable SayStone actions through App Intents
+   so Apple Shortcuts can call them. Verify discovery and execution in the
+   real Shortcuts app, including the project's minimum supported macOS.
+
+Keep transcription, cleanup, clipboard, hotkeys, workflow execution,
+permissions, and persistence separable and testable. Adapt existing services
+before creating parallel implementations or duplicate settings controls.
+Use Swift concurrency to keep audio/model work and subprocesses off the UI
+thread, with explicit cancellation and ownership of ongoing work. Store
+credentials in Keychain and keep speech/clipboard data local by default.
+Persist structured workflow definitions with a versioned schema, not secrets.
+
+Before UI implementation, run design-system-axi find for the native Mac
+utility you are building, then inspect approved assets/tokens/guidelines.
+Preserve SayStone's selected visual baseline and use native Mac conventions.
+
+Use synthetic transcripts, authored WAV fixtures, and test clipboard data.
+Do not read private dictation history, arbitrary clipboard content, inboxes,
+or real credentials for testing without explicit authorization. Test the
+important behavior: hotkey conflicts, cancellation, focus changes, pasteboard
+restoration after concurrent copy, workflow timeouts, permission denial, and
+speech failures/retry. For audio and cross-app insertion, verify on the real
+Mac with built-in and Bluetooth microphones, hotplug, sleep/wake, and several
+target apps. A build or a fixture test is not daily-use acceptance.
+
+Preserve upstream licensing, existing storage keys, and the installed app's
+identity. Use a separately identified development app for interactive testing
+when feasible, with its own permissions and isolated test data. Do not replace
+~/Applications/SayStone.app, activate profile sync, change Mini/Forge services,
+push, publish, or release as part of local implementation. If a stable signing
+identity is required, use the installed development certificate through the
+existing build workflow; do not print credentials or hard-code team details.
+Preserve scripts/local/repair-framework-bundle.py and verify strict signatures
+when packaging the generated CTranscribe framework.
+
+Write an implementation plan and feature/test map, then begin the first small
+vertical slice: a reusable action registry and configurable shortcut that
+copies the latest transcript, with plain-text paste as the next action.
+Keep existing dictation working throughout. Finish each increment with changed
+files, validation results, a runnable app location, and unresolved limitations.
+Document remaining work in the repository so another session can continue.

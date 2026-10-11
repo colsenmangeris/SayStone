@@ -4,6 +4,17 @@
 
 Personal speech-to-text fork of [FluidVoice](https://github.com/altic-dev/FluidVoice), preserving its recognition providers and design.
 
+## SayStone development
+
+Open this checkout in T3 Code and open `SayStone.xcodeproj` in Xcode. Select the
+**SayStone** scheme and **My Mac** destination. Build locally with `./build.sh`.
+
+[Development setup and workspace guide](docs/development/START-HERE.md) ·
+[Feature build prompt](docs/development/BUILD-PROMPT.txt)
+
+The documentation below is retained from upstream. Its downloads and Homebrew
+command install upstream FluidVoice; they are not SayStone development builds.
+
 ## Upstream FluidVoice
 
 
@@ -197,7 +208,7 @@ Whisper supports up to 99 languages, depending on the model size you choose.
 ```bash
 git clone https://github.com/altic-dev/FluidVoice.git
 cd FluidVoice
-open Fluid.xcodeproj
+open SayStone.xcodeproj
 ```
 
 Build and run in Xcode. All dependencies are managed via Swift Package Manager.
@@ -254,13 +265,13 @@ Contributions are welcome! Please create an issue first to discuss major changes
 ## Run Integration Tests
 
 ```bash
-xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS'
+xcodebuild test -project SayStone.xcodeproj -scheme SayStone -destination 'platform=macOS'
 ```
 
 CI uses unsigned builds:
 
 ```bash
-xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+xcodebuild test -project SayStone.xcodeproj -scheme SayStone -destination 'platform=macOS' CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 ```
 
 ---

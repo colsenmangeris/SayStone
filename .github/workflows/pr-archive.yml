@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - 'Sources/**'
-      - 'Fluid.xcodeproj/**'
+      - 'SayStone.xcodeproj/**'
       - 'Package.swift'
       - 'Package.resolved'
       - 'Info.plist'
@@ -95,8 +95,8 @@ jobs:
           set -euo pipefail
 
           xcodebuild archive \
-            -project Fluid.xcodeproj \
-            -scheme Fluid \
+            -project SayStone.xcodeproj \
+            -scheme SayStone \
             -configuration Release \
             -destination 'generic/platform=macOS' \
             -archivePath "$ARCHIVE_PATH" \

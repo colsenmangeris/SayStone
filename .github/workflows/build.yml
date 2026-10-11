@@ -33,7 +33,7 @@ jobs:
           relevant:
             - 'Sources/**'
             - 'Tests/**'
-            - 'Fluid.xcodeproj/**'
+            - 'SayStone.xcodeproj/**'
             - 'Package.swift'
             - 'Package.resolved'
             - 'Info.plist'
@@ -94,8 +94,8 @@ jobs:
       run: |
         set -o pipefail
         xcodebuild test \
-          -project Fluid.xcodeproj \
-          -scheme Fluid \
+          -project SayStone.xcodeproj \
+          -scheme SayStone \
           -destination 'platform=macOS,arch=arm64' \
           -skip-testing:FluidDictationIntegrationTests/DictationE2ETests/testDictationEndToEnd_whisperTiny_transcribesFixture \
           CODE_SIGN_IDENTITY="" \

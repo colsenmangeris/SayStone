@@ -89,8 +89,8 @@ Build reliable automated test coverage for FluidVoice native macOS UI behavior (
 5. Test docs include how to run locally.
 
 ## Local Run Commands (to finalize when branch starts)
-- Unit tests: `xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS,arch=arm64' -only-testing:FluidTests`
-- UI tests: `xcodebuild test -project Fluid.xcodeproj -scheme Fluid -destination 'platform=macOS,arch=arm64' -only-testing:FluidVoiceUITests`
+- Unit tests: `xcodebuild test -project SayStone.xcodeproj -scheme SayStone -destination 'platform=macOS,arch=arm64' -only-testing:FluidTests`
+- UI tests: `xcodebuild test -project SayStone.xcodeproj -scheme SayStone -destination 'platform=macOS,arch=arm64' -only-testing:FluidVoiceUITests`
 
 ## Notes
 - Keep internal compatibility symbols (`rewrite*`) unchanged in this automation branch unless needed for explicit test seams.

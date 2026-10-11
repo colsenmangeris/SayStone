@@ -48,7 +48,7 @@
 			containerPortal = 7C078D872E3B339200FB7CAC /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 7C078D8E2E3B339200FB7CAC;
-			remoteInfo = fluid;
+			remoteInfo = SayStone;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -80,7 +80,7 @@
 		B52000000000000000000001 /* PrivateAIDictationTokenBudgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivateAIDictationTokenBudgetTests.swift; sourceTree = "<group>"; };
 		C0DE63700000000000000001 /* WhisperLanguageSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhisperLanguageSelectionTests.swift; sourceTree = "<group>"; };
 		CACEC0010000000000000001 /* KeychainServiceCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainServiceCacheTests.swift; sourceTree = "<group>"; };
-		7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FluidVoice Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7C078D8F2E3B339200FB7CAC /* SayStone.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SayStone.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C91B0022F42AA0100C0DEF0 /* HotkeyShortcutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyShortcutTests.swift; sourceTree = "<group>"; };
 		C0DE89000000000000000001 /* SettingsNavigationStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsNavigationStateTests.swift; sourceTree = "<group>"; };
 		7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FluidDictationIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -141,7 +141,7 @@
 		7C078D902E3B339200FB7CAC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */,
+				7C078D8F2E3B339200FB7CAC /* SayStone.app */,
 				7CDB0A202F3C4D5600FB7CAD /* FluidDictationIntegrationTests.xctest */,
 			);
 			name = Products;
@@ -212,9 +212,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		7C078D8E2E3B339200FB7CAC /* fluid */ = {
+		7C078D8E2E3B339200FB7CAC /* SayStone */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7C078D9A2E3B339300FB7CAC /* Build configuration list for PBXNativeTarget "fluid" */;
+			buildConfigurationList = 7C078D9A2E3B339300FB7CAC /* Build configuration list for PBXNativeTarget "SayStone" */;
 			buildPhases = (
 				7C078D8B2E3B339200FB7CAC /* Sources */,
 				7C078D8C2E3B339200FB7CAC /* Frameworks */,
@@ -228,7 +228,7 @@
 			fileSystemSynchronizedGroups = (
 				7C078D912E3B339200FB7CAC /* Sources/Fluid */,
 			);
-			name = fluid;
+			name = SayStone;
 			packageProductDependencies = (
 				5A5700000000000000000002 /* Qwen3ASR */,
 				7C078DA42E3B386A00FB7CAC /* FluidAudio */,
@@ -237,8 +237,8 @@
 				7C9A71012F58B00000FB7CAF /* TranscribeCpp */,
 				7C5AF14A2F15041600DE21B0 /* MediaRemoteAdapter */,
 			);
-			productName = FluidVoice;
-			productReference = 7C078D8F2E3B339200FB7CAC /* FluidVoice Debug.app */;
+			productName = SayStone;
+			productReference = 7C078D8F2E3B339200FB7CAC /* SayStone.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7CDB0A1F2F3C4D5600FB7CAD /* FluidDictationIntegrationTests */ = {
@@ -302,7 +302,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				7C078D8E2E3B339200FB7CAC /* fluid */,
+				7C078D8E2E3B339200FB7CAC /* SayStone */,
 				7CDB0A1F2F3C4D5600FB7CAD /* FluidDictationIntegrationTests */,
 			);
 		};
@@ -368,7 +368,7 @@
 /* Begin PBXTargetDependency section */
 		7CDB0A312F3C4D5600FB7CAD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 7C078D8E2E3B339200FB7CAC /* fluid */;
+			target = 7C078D8E2E3B339200FB7CAC /* SayStone */;
 			targetProxy = 7CDB0A322F3C4D5600FB7CAD /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -672,7 +672,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7C078D9A2E3B339300FB7CAC /* Build configuration list for PBXNativeTarget "fluid" */ = {
+		7C078D9A2E3B339300FB7CAC /* Build configuration list for PBXNativeTarget "SayStone" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7C078D9B2E3B339300FB7CAC /* Debug */,

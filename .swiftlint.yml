@@ -29,7 +29,7 @@ opt_in_rules:
 excluded:
   - .build
   - DerivedData
-  - Fluid.xcodeproj
+  - SayStone.xcodeproj
   - scratch
 line_length:
   warning: 250

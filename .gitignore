@@ -119,7 +119,7 @@ config/secrets.yml
 */*.entitlements.bak
 ## Developer-specific Xcode settings (for open source)
 # Each developer should have their own team/bundle ID setup
-Fluid.xcodeproj/project.pbxproj.local
+SayStone.xcodeproj/project.pbxproj.local
 xcconfig/Local.xcconfig
 
 ## Logs
@@ -223,3 +223,9 @@ sample/
 .codex
 AGENTS.md
 builds/
+
+# Shared SayStone development guidance and helpers
+!AGENTS.md
+!docs/
+docs/*
+!docs/development/

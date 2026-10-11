@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# FluidVoice Build Profile Router
+# SayStone Build Profile Router
 # Defaults to the public OSS build, which skips private Fluid Intelligence.
 #
 # Usage:
@@ -38,8 +38,8 @@ run_public_build() {
     local development_team
     local engine_xcconfig="${DERIVED_DATA_PATH}/SayStoneEngineManifest.xcconfig"
     local -a build_args=(
-        -project Fluid.xcodeproj
-        -scheme Fluid
+        -project SayStone.xcodeproj
+        -scheme SayStone
         -configuration Debug
         -destination 'platform=macOS'
         -derivedDataPath "${DERIVED_DATA_PATH}"
@@ -66,7 +66,7 @@ run_public_build() {
     python3 "${manifest_args[@]}"
 
     if [ "${signing_mode}" = "unsigned" ]; then
-        echo "Running unsigned public FluidVoice build..."
+        echo "Running unsigned public SayStone build..."
         echo "Accessibility permission may need to be granted again after rebuilding."
         exec xcodebuild "${build_args[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
     fi
@@ -99,9 +99,26 @@ EOF
         exit 1
     fi
 
-    echo "Running signed public FluidVoice build..."
+    echo "Running signed public SayStone build..."
     echo "Build product: ${DERIVED_DATA_PATH}/Build/Products/Debug/SayStone.app"
-    exec xcodebuild "${build_args[@]}" DEVELOPMENT_TEAM="${development_team}"
+    xcodebuild "${build_args[@]}" DEVELOPMENT_TEAM="${development_team}"
+
+    # The upstream binary framework needs macOS versioned-framework symlinks
+    # before strict bundle verification. Repair only this generated product.
+    local app_path="${DERIVED_DATA_PATH}/Build/Products/Debug/SayStone.app"
+    local signing_identity signing_authority
+    signing_authority="$(codesign --display --verbose=2 "${app_path}" 2>&1 \
+        | awk '/^Authority=/ { if (!authority) authority = substr($0, 11) } END { print authority }')"
+    signing_identity="$(security find-identity -v -p codesigning 2>/dev/null \
+        | awk -v authority="${signing_authority}" \
+            'index($0, "\"" authority "\"") { if (!identity) identity = $2 } END { print identity }')"
+    if [ -z "${signing_identity}" ]; then
+        echo >&2 "Could not resolve the certificate used to sign this build."
+        return 1
+    fi
+    python3 "${PROJECT_DIR}/scripts/local/repair-framework-bundle.py" \
+        "${app_path}" --identity "${signing_identity}"
+    echo "Signed SayStone build verified: ${app_path}"
 }
 
 case "${PROFILE}" in

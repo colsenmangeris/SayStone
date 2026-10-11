@@ -48,7 +48,7 @@ def git_head(root: Path) -> str:
 
 
 def fluid_audio_revision(root: Path) -> str:
-    resolved = root / "Fluid.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+    resolved = root / "SayStone.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
     data = json.loads(resolved.read_text())
     for pin in data.get("pins", []):
         if pin.get("identity", "").lower() == "fluidaudio":
