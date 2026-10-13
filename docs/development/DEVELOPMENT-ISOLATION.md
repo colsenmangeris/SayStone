@@ -23,14 +23,13 @@ recovery audio, local model downloads and deletion, logs, rollback storage and
 analytics storage resolve under this root. macOS preferences use the separate
 bundle domain under `~/Library/Preferences/`.
 
-FluidAudio's pinned vocabulary-boosting tokenizer loader is an exception to
-complete model-cache isolation: it reads `tokenizer.json` and
-`tokenizer_config.json` from the SDK's ordinary CTC cache path even when the
-app loads its CTC models from Development storage. Source review found no
-download or write in that tokenizer loader, and missing assets fall back to
-base ASR. Fully isolated vocabulary boosting is still pending; see
-[FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md). This
-review did not inspect the daily app's cache contents.
+On October 13, the FluidAudio tokenizer-directory fix was published to the
+authorized fork and pinned in this checkout. The boosted manager now receives
+the same private CTC directory used for the models and vocabulary tokenizer.
+Two real-model SDK cache tests passed. Integrated Development build and speech
+inference acceptance remain separate; see
+[FLUIDAUDIO-CTC-CACHE-LIMITATION.md](FLUIDAUDIO-CTC-CACHE-LIMITATION.md).
+No daily app cache contents were inspected.
 
 Provider credentials and speech-profile tokens use the Keychain service
 `com.architech.saystone.development.provider-api-keys`. Both normal access

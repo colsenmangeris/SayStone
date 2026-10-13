@@ -141,7 +141,8 @@ final class FluidAudioProvider: TranscriptionProvider {
                     try await boostedManager.initialize(models: models)
                     try await boostedManager.configureVocabularyBoosting(
                         vocabulary: vocabBundle.vocabulary,
-                        ctcModels: vocabBundle.ctcModels
+                        ctcModels: vocabBundle.ctcModels,
+                        ctcModelDirectory: vocabBundle.ctcModelDirectory
                     )
                     self.isWordBoostingActive = true
                     self.boostedVocabularyTermsCount = vocabBundle.vocabulary.terms.count

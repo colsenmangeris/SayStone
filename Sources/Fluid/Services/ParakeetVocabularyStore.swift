@@ -320,7 +320,9 @@ extension ParakeetVocabularyStore {
     /// Creates tokenized vocabulary + CTC models for FluidAudio vocabulary boosting.
     func loadTokenizedVocabularyBundle(
         maxTerms: Int = 256
-    ) async throws -> (vocabulary: CustomVocabularyContext, ctcModels: CtcModels)? {
+    ) async throws -> (
+        vocabulary: CustomVocabularyContext, ctcModels: CtcModels, ctcModelDirectory: URL
+    )? {
         let resolved = try self.loadResolvedConfig()
         DebugLogger.shared.debug("ParakeetVocabularyStore: resolved vocabulary term count=\(resolved.terms.count)", source: "ParakeetVocabularyStore")
         guard !resolved.terms.isEmpty else {
@@ -386,7 +388,7 @@ extension ParakeetVocabularyStore {
             source: "ParakeetVocabularyStore"
         )
 
-        return (vocabulary, ctcModels)
+        return (vocabulary, ctcModels, ctcDirectory)
     }
 }
 #endif

@@ -1,5 +1,27 @@
 # FluidAudio vocabulary tokenizer cache limitation
 
+## October 13 fix
+
+The bounded SDK change is published at
+[`bce007d1c1b559f2f224bb1369bd1fc7c95fbc7a`](https://github.com/colsenmangeris/FluidAudio/commit/bce007d1c1b559f2f224bb1369bd1fc7c95fbc7a).
+Xcode's package reference, Package.resolved, and the inherited Package.swift
+now select that exact revision. SayStone passes the same selected CTC directory
+used to load its vocabulary tokenizer and models into the boosted manager.
+Public builds select their existing directory; Development selects its private
+directory. Missing private assets still propagate into the existing base-ASR
+fallback, without borrowing tokenizer assets from the ordinary cache.
+
+Two opt-in native SDK tests passed using separately downloaded real CTC 110M
+models and tokenizer assets in private temporary storage, with zero failures or
+skips. They validate explicit-directory loading and missing-file errors; they
+do not establish speech inference or recognition quality. The earlier
+placeholder-model checks were preliminary and are superseded by this receipt.
+See [dependency change and validation](dependency-patches/README.md).
+The integrated signed Development build and native acceptance are being run on
+the dedicated Mac Mini. The original finding below is retained as provenance.
+
+## Original finding
+
 Source-reviewed on 2026-10-11 against pinned FluidAudio revision
 `3fd63887eef1dc25edea8263ce4b44aa854d898b`.
 

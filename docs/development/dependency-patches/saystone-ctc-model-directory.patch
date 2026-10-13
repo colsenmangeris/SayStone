@@ -1,0 +1,38 @@
+diff --git a/Sources/Fluid/Services/FluidAudioProvider.swift b/Sources/Fluid/Services/FluidAudioProvider.swift
+index 8a06da3..cda30d5 100644
+--- a/Sources/Fluid/Services/FluidAudioProvider.swift
++++ b/Sources/Fluid/Services/FluidAudioProvider.swift
+@@ -141,7 +141,8 @@ final class FluidAudioProvider: TranscriptionProvider {
+                     try await boostedManager.initialize(models: models)
+                     try await boostedManager.configureVocabularyBoosting(
+                         vocabulary: vocabBundle.vocabulary,
+-                        ctcModels: vocabBundle.ctcModels
++                        ctcModels: vocabBundle.ctcModels,
++                        ctcModelDirectory: vocabBundle.ctcModelDirectory
+                     )
+                     self.isWordBoostingActive = true
+                     self.boostedVocabularyTermsCount = vocabBundle.vocabulary.terms.count
+diff --git a/Sources/Fluid/Services/ParakeetVocabularyStore.swift b/Sources/Fluid/Services/ParakeetVocabularyStore.swift
+index 55207be..68da1e6 100644
+--- a/Sources/Fluid/Services/ParakeetVocabularyStore.swift
++++ b/Sources/Fluid/Services/ParakeetVocabularyStore.swift
+@@ -320,7 +320,9 @@ extension ParakeetVocabularyStore {
+     /// Creates tokenized vocabulary + CTC models for FluidAudio vocabulary boosting.
+     func loadTokenizedVocabularyBundle(
+         maxTerms: Int = 256
+-    ) async throws -> (vocabulary: CustomVocabularyContext, ctcModels: CtcModels)? {
++    ) async throws -> (
++        vocabulary: CustomVocabularyContext, ctcModels: CtcModels, ctcModelDirectory: URL
++    )? {
+         let resolved = try self.loadResolvedConfig()
+         DebugLogger.shared.debug("ParakeetVocabularyStore: resolved vocabulary term count=\(resolved.terms.count)", source: "ParakeetVocabularyStore")
+         guard !resolved.terms.isEmpty else {
+@@ -386,7 +388,7 @@ extension ParakeetVocabularyStore {
+             source: "ParakeetVocabularyStore"
+         )
+ 
+-        return (vocabulary, ctcModels)
++        return (vocabulary, ctcModels, ctcDirectory)
+     }
+ }
+ #endif
