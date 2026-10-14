@@ -229,3 +229,4 @@ builds/
 !docs/
 docs/*
 !docs/development/
+!docs/handoffs/

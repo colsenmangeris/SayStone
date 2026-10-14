@@ -5,9 +5,11 @@ profiling and debugging**. Xcode MCP connects these workflows. You can keep
 both applications open against the same checkout; no second project or rewrite
 is needed. SayStone already is a native Swift macOS application.
 
-Current continuation: [Mac Mini acceptance, October 13](MAC-MINI-ACCEPTANCE-2026-10-13.md).
+Current continuation: [Mac workflows handoff, October 14](../handoffs/2026-10-14-saystone-mac-workflows.md),
+then [Mac Mini acceptance, October 13](MAC-MINI-ACCEPTANCE-2026-10-13.md).
 The SDK cache fix is pinned, 52 native units and authored Whisper acceptance
-pass on the Mini. UI acceptance still needs an unlocked testing desktop.
+pass on the Mini. UI acceptance still needs an unlocked testing desktop. This
+branch is local only and has not been pushed.
 
 ## Paths and repository
 
