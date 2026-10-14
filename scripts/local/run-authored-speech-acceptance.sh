@@ -24,7 +24,12 @@ case "$PROVIDER" in
 esac
 APP="$ROOT/DerivedData/Build/Products/Development/SayStone Development.app"
 codesign --verify --deep --strict "$APP"
-TEST_MANIFEST="$(python3 - "$ROOT" "$DOWNLOAD" <<'PY'
+# macOS's Bash 3.2 can misparse quoted Python strings when a heredoc is
+# nested inside command substitution. Keep the heredoc at shell scope.
+MANIFEST_PATH_RECEIPT="$(mktemp "${TMPDIR:-/tmp}/saystone-speech-manifest.XXXXXX")"
+TEST_MANIFEST=""
+trap 'rm -f "$MANIFEST_PATH_RECEIPT"; [ -z "$TEST_MANIFEST" ] || rm -f "$TEST_MANIFEST"' EXIT
+python3 - "$ROOT" "$DOWNLOAD" "$MANIFEST_PATH_RECEIPT" <<'PY'
 import os, plistlib, sys, tempfile, uuid
 from pathlib import Path
 root = Path(sys.argv[1]).resolve()
@@ -64,10 +69,10 @@ environment['SAYSTONE_ALLOW_AUTHORED_MODEL_DOWNLOAD'] = sys.argv[2]
 fd, name = tempfile.mkstemp(prefix='.authored-speech-', suffix='.xctestrun', dir=products)
 with os.fdopen(fd, 'wb') as output:
     plistlib.dump(manifest, output)
-print(name)
+Path(sys.argv[3]).write_text(name, encoding='utf-8')
 PY
-)"
-trap 'rm -f "$TEST_MANIFEST"' EXIT
+TEST_MANIFEST="$(cat "$MANIFEST_PATH_RECEIPT")"
+rm -f "$MANIFEST_PATH_RECEIPT"
 if [ -z "$RESULT_BUNDLE" ]; then
     RESULT_DIRECTORY="$(mktemp -d "${TMPDIR:-/tmp}/saystone-authored-speech.XXXXXX")"
     RESULT_BUNDLE="$RESULT_DIRECTORY/Acceptance.xcresult"
