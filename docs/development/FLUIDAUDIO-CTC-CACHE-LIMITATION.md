@@ -17,8 +17,12 @@ skips. They validate explicit-directory loading and missing-file errors; they
 do not establish speech inference or recognition quality. The earlier
 placeholder-model checks were preliminary and are superseded by this receipt.
 See [dependency change and validation](dependency-patches/README.md).
-The integrated signed Development build and native acceptance are being run on
-the dedicated Mac Mini. The original finding below is retained as provenance.
+The integrated native test products compiled on the Mini, and the final app and
+UI runner pass strict deep verification with its Development certificate.
+52 native units and authored Whisper acceptance pass; UI and boosted speech
+inference acceptance remain separate. See
+[Mac Mini acceptance](MAC-MINI-ACCEPTANCE-2026-10-13.md).
+The original finding below is retained as provenance.
 
 ## Original finding
 

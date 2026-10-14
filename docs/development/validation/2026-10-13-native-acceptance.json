@@ -1,0 +1,70 @@
+{
+  "appInfo": {
+    "CFBundleExecutable": "SayStone Development",
+    "CFBundleIdentifier": "com.architech.saystone.development",
+    "CFBundleShortVersionString": "1.6.10",
+    "CFBundleVersion": "22",
+    "LSMinimumSystemVersion": "15.0",
+    "SayStoneEngineFluidAudioRevision": "bce007d1c1b559f2f224bb1369bd1fc7c95fbc7a",
+    "SayStoneEngineModelKey": "",
+    "SayStoneEngineModelRevision": "",
+    "SayStoneEngineModelSha256": "",
+    "SayStoneEnginePipelineRevision": "saystone-shared-pipeline-v1",
+    "SayStoneEngineProfileSchemaRevision": "2",
+    "SayStoneEngineRuntimeCommit": "8d98a433257b9ccb46c3448bd08565ce8713918b"
+  },
+  "runtimeRoot": "/Users/colsenmangeris/Development/SayStone-Acceptance/20261013-runtime",
+  "sourceStage": "/Users/colsenmangeris/Development/SayStone-Acceptance/20261013-e5c8b7b",
+  "buildVolume": "/Volumes/ForgeData/SayStone-Acceptance/20261013-e5c8b7b",
+  "sourceRevision": "8d98a433257b9ccb46c3448bd08565ce8713918b",
+  "buildForTesting": "passed with documented CI ad-hoc compilation flags",
+  "finalSigning": "trusted Apple Development identity from GUI session",
+  "strictSignature": true,
+  "summaries": {
+    "SafeUnits": {
+      "passedTests": 52,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "testFailures": [],
+      "startTime": 1791941837.345,
+      "finishTime": 1791941841.093,
+      "receiptPath": "/Users/colsenmangeris/Development/SayStone-Acceptance/20261013-results/SafeUnits.xcresult"
+    },
+    "Utilities": {
+      "passedTests": 0,
+      "failedTests": 1,
+      "skippedTests": 0,
+      "testFailures": [
+        {
+          "failureText": "The test runner failed to initialize for UI testing. (Underlying Error: Timed out while enabling automation mode.)",
+          "targetName": "SayStoneUITests",
+          "testIdentifier": 1,
+          "testIdentifierString": "SayStoneUITests-Runner (64188) encountered an error",
+          "testName": "SayStoneUITests-Runner (64188) encountered an error"
+        }
+      ],
+      "startTime": 1791941842.088,
+      "finishTime": 1791941912.914,
+      "receiptPath": "/Users/colsenmangeris/Development/SayStone-Acceptance/20261013-results/Utilities.xcresult"
+    },
+    "Whisper": {
+      "passedTests": 1,
+      "failedTests": 0,
+      "skippedTests": 0,
+      "testFailures": [],
+      "startTime": 1791944341.59,
+      "finishTime": 1791944352.564,
+      "receiptPath": "/Users/colsenmangeris/Development/SayStone-Acceptance/20261013-results/Whisper.xcresult"
+    }
+  },
+  "audioInputDevices": 0,
+  "uiBlockedBy": [
+    "desktop locked at post-run check",
+    "Developer Tools mode disabled"
+  ],
+  "phoneStage": "deferred by user; paired phone previously unavailable",
+  "speechHelperSha256": "97233665954206d97da02b53188b9045d9270e82180d82d7ee4fc634e28106b5",
+  "generalClipboardInspected": false,
+  "dailyDataInspected": false,
+  "sharedServicesActivated": false
+}
