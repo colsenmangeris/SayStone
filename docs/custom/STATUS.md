@@ -63,3 +63,27 @@ Added OpenRouter and retained Azure under Voice Engine > MAI-Transcribe-2 Connec
 
 Validation: request tests cover both styles, both response schemas, destination/auth separation, WAV encoding and HTTP errors. Signed public build and installed strict deep signature verification passed. Installation needed a fresh bundle copy because overlay copying left a stale sealed resource; fresh copy passed. Prior installed app is archived as saystone-before-openrouter.zip outside git. Installed UI verified OpenRouter/Verbatim controls and secure key field; Parakeet v2 remains active, microphone and Accessibility permissions granted. User key entry and live API acceptance remain pending.
 Source: https://openrouter.ai/docs/guides/overview/multimodal/stt and https://openrouter.ai/microsoft/mai-transcribe-2
+
+## OpenRouter live smoke acceptance (2026-09-11)
+User saved dedicated key. Verified persisted OpenRouter/verbatim configuration and key presence without disclosure. Application request builder sent identical 1.15775-second fixture audio through both styles: both HTTP 200 and 'Hello fluid voice.' Verbatim wall time 1.74s; clean 0.25s. Single sequential requests are not comparative speed evidence. Parakeet remains selected; representative Mac/phone paired evaluation pending. Local receipt: mai-openrouter-smoke-2026-09-11.json in troubleshooting directory.
+
+## System microphone repair (2026-09-11)
+Observed Jabra system-default input while legacy priority selected built-in microphone. AVAudioEngine rebind failed -10851 and produced 0Hz/0ch. Compatibility coordinator now resolves only the system default, and AVAudioEngine capture preserves its managed route without AUHAL rebinding. Voice Engine and Audio settings expose System microphone picker, explicitly stating changes also affect macOS input. Legacy priority UI remains only for diagnostic direct capture. Independent per-app manual input is not implemented by this picker.
+
+Signed build, strict installed signature check, deadline tests and diff check passed. Installed Jabra capture reached PCM after one route-change retry and playground returned 'Hello, testing, testing?' using Parakeet. MAI then activated via new explicit button beside connection settings; UI confirms MAI active with OpenRouter/Clean and Jabra Link 380. Live MAI dictation and microphone-switch testing remain pending. Existing key remains separate from cleanup-provider credentials.
+
+## User acceptance and UI correction (2026-09-11)
+User confirms live MAI dictation works. Removed duplicate microphone picker from Voice Engine at user request; microphone selection belongs only in Settings > Audio. Retained system-route capture fix and removed stale priority-only guidance from the compatibility UI. MAI remains active; installed UI before final copy shows OpenRouter/Verbatim (user-selected). Next: paired real Mac/phone audio comparison, MAI clean versus verbatim, optional cleanup only if needed, then cross-device provider/profile integration. Scribe v2 deferred.
+
+## Processing visibility and failure recovery (2026-09-11)
+User prioritizes stop-to-paste speed and reports disappearing recordings/indicator. Logs confirm 27.4s recording at 15:38:09 failed with OpenRouter quota busy (HTTP 429 mapping); ASR catch previously logged and returned empty without user error. Successful 32.5s/51.7s recordings took ~1.324s/~2.448s final processing, not paired speed benchmarks.
+
+Normal dictation no longer requests immediate overlay hide at stop; it takes the existing processing-overlay path through final recognition/delivery. Non-cancellation recognition failures with captured PCM now show Transcription Failed and save latest failed recording to Application Support/SayStone/Recovery/Latest Failed Dictation.wav. One file, replaced by subsequent failures; alert explains location and retry via File Transcription. This does not recover historical failed buffers. Separate save errors are surfaced. No automatic paid retry or provider switch.
+
+Signed build, strict installed signature and WAV recovery tests passed (encoding/clipping, 0600 permissions, replacement). Installed MAI selection preserved. Live post-change loading/error UI acceptance still pending; do not equate helper tests with UI acceptance.
+
+## Return to Parakeet (2026-09-11)
+User rejects MAI for daily use following repeated failures. Activated Parakeet TDT v2 in installed UI and verified Active. Preserved latest failed WAV as separate timestamped recovery file. Fresh SpeakoFlow warm tests 0.093s short / 0.557s paragraph, but wrong-day correction repeated twice. No automatic cleanup enabled; see LOCAL_CLEANUP.md for measured evidence and guarded local recommendation.
+
+## Guarded local cleanup trial (2026-09-11)
+Installed 2e92fb3; Ollama provider verified with saystone-punctuation:latest alias of installed SpeakoFlow Q8_0. Existing Local punctuation trial style selected in Dictation AI Prompt; Parakeet v2 remains loaded. Fixed model-specific prompt with lexical order, number, identifier and symbol checks; punctuation is not guaranteed semantically equivalent. Local-only request, 1.5s request/resource timeout, 30m keep-alive, no streaming, raw fallback for errors/rejections or inputs over 4000 chars. Tests and signed build passed. Warm short requests around 0.06-0.11s; cold timeout returned raw. Many punctuation-only model outputs unchanged, so usefulness remains a user trial, not accepted quality. No new settings panel.
